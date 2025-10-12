@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const images = document.querySelectorAll('img.lazy');
+  const images = document.querySelectorAll('img[lazysrc]');
   
   const observerOptions = {
     root: null,
@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const img = entry.target;
-        img.src = img.dataset.lazysrc;
-        img.classList.remove('lazy');
+        img.src = img.getAttribute('lazysrc');
+        img.removeAttribute('lazysrc');
         observer.unobserve(img);
       }
     });
