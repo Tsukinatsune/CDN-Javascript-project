@@ -1,4 +1,4 @@
-let carouselimagecache = {};
+  let carouselimagecache = {};
 
 function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
     const {
@@ -80,7 +80,22 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
                 ctx.stroke();
             }
             ctx.globalAlpha = 1;
-        } else if (type === 'orbit') {
+        } else if (type === 'circleDownloadSpin') {
+        ctx.strokeStyle = `#00ccff`;
+        const segments = 8;
+        const radius = maxRadius * 0.4;
+        ctx.globalAlpha = 0.7;
+        for (let i = 0; i < segments; i++) {
+            const angle = (elapsed * 3 + (i * 2 * Math.PI / segments)) % (2 * Math.PI);
+            const opacity = 0.3 + 0.7 * (1 - (i / segments));
+            ctx.globalAlpha = opacity;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, angle, angle + Math.PI / 8);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        return true;
+    } else if (type === 'orbit') {
             ctx.fillStyle = `#ffc107`;
             const numParticles = 12;
             const orbitRadius = maxRadius * 0.7;
@@ -183,7 +198,33 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
                 ctx.fill();
             }
             ctx.restore();
-        } else if (type === 'wobble') {
+        } else if (type === 'flameAnimation') {
+        ctx.globalAlpha = eased;
+        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
+        const numFlames = 30;
+        ctx.globalAlpha = 1 - eased;
+        for (let i = 0; i < numFlames; i++) {
+            const flameX = x + Math.random() * imgScaledWidth;
+            const baseY = y + imgScaledHeight;
+            const flameProgress = (elapsedPost + Math.random() * 0.5) * 50;
+            const flameY = baseY - flameProgress;
+            const size = (5 + Math.random() * 5) / Math.sqrt(effectiveScale);
+            const hue = 20 + Math.random() * 40; // Red to yellow
+            ctx.fillStyle = `hsla(${hue}, 80%, 50%, ${1 - eased})`;
+            ctx.beginPath();
+            ctx.moveTo(flameX, flameY);
+            ctx.quadraticCurveTo(
+                flameX - size / 2, flameY - size * 2,
+                flameX, flameY - size * 4
+            );
+            ctx.quadraticCurveTo(
+                flameX + size / 2, flameY - size * 2,
+                flameX, flameY
+            );
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    } else if (type === 'wobble') {
             ctx.save();
             ctx.beginPath();
             ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
@@ -284,7 +325,30 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
                 ctx.fill();
             }
             ctx.globalAlpha = 1;
-        } else if (type === 'slide') {
+        } else if (type === 'flameAnimation') {
+        ctx.globalAlpha = 1 - eased;
+        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
+        const numFlames = 50;
+        for (let i = 0; i < numFlames; i++) {
+            const flameX = x + Math.random() * imgScaledWidth;
+            const flameY = y + imgScaledHeight - (Math.random() * imgScaledHeight * eased);
+            const size = (8 + Math.random() * 8) / Math.sqrt(effectiveScale);
+            const hue = 20 + Math.random() * 40; // Red to yellow
+            ctx.fillStyle = `hsla(${hue}, 80%, 50%, ${1 - eased})`;
+            ctx.beginPath();
+            ctx.moveTo(flameX, flameY);
+            ctx.quadraticCurveTo(
+                flameX - size / 2, flameY - size * 2,
+                flameX, flameY - size * 4
+            );
+            ctx.quadraticCurveTo(
+                flameX + size / 2, flameY - size * 2,
+                flameX, flameY
+            );
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    } else if (type === 'slide') {
             const offsetX = eased * targetWidth;
             ctx.drawImage(image, x + offsetX, y, imgScaledWidth, imgScaledHeight);
         } else if (type === 'none') {
@@ -451,4 +515,4 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
             runExitAnimation(img, drawParams, callback);
         }
     };
-}
+}     
