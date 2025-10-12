@@ -1,5 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const images = document.querySelectorAll('img[lazysrc]');
+const images = document.querySelectorAll('img[lazysrc]');
   
   const observerOptions = {
     root: null,
@@ -19,4 +18,3 @@ document.addEventListener('DOMContentLoaded', () => {
   }, observerOptions);
 
   images.forEach(image => imageObserver.observe(image));
-});
