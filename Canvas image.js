@@ -236,7 +236,7 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
                     } else {
                         // Spiral bend effect applied to the entire image
                         const amplitude = 0.1 * (1 - eased); // Amplitude for spiral offset
-                        const frequency = 2 * Math.PI; // Frequency for spiral rotation
+                        const frequency = 0.1 * Math.PI; // Frequency for spiral rotation
                         const spiralAngle = frequency * elapsedPost * (1 - eased); // Spiral rotation
 
                         // Center the transformation on the image
@@ -250,23 +250,6 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
 
                         // Draw the image centered
                         ctx.drawImage(image, -imgScaledWidth / 2, -imgScaledHeight / 2, imgScaledWidth, imgScaledHeight);
-
-                        // Add smoke effect for spiralSmoke aesthetic
-                        ctx.globalAlpha = (1 - eased) * 0.3;
-                        ctx.fillStyle = `rgba(128, 128, 128, 0.2)`;
-                        const centerX = 0; // Relative to translated context
-                        const centerY = 0;
-                        const maxRadius = Math.max(imgScaledWidth, imgScaledHeight) * 0.7;
-                        for (let i = 0; i < 20; i++) {
-                            const angle = i * 2 * Math.PI / 20 + elapsedPost;
-                            const r = maxRadius * (1 - eased);
-                            const smokeX = centerX + r * Math.cos(angle * 3);
-                            const smokeY = centerY + r * Math.sin(angle * 3);
-                            ctx.beginPath();
-                            ctx.arc(smokeX, smokeY, 3 / effectiveScale, 0, 2 * Math.PI);
-                            ctx.fill();
-                        }
-                        ctx.globalAlpha = 1;
                     }
                     ctx.restore();
                 }  else if (type === 'wobble') {
