@@ -253,73 +253,27 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
                     }
                     ctx.restore();
                 } else if (type === 'lenzoom') {
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
-    ctx.clip();
-
-    if (progress >= 0.99) {
-        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
-    } else {
-        const lensStrength = 0.9 * (1 - eased);
-        const centerX = x + imgScaledWidth / 2;
-        const centerY = y + imgScaledHeight / 2;
-
-        // Create a temporary canvas
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = imgScaledWidth;
-        tempCanvas.height = imgScaledHeight;
-        const tempCtx = tempCanvas.getContext('2d');
-
-        // Ensure image is CORS-compliant
-        try {
-            tempCtx.drawImage(image, 0, 0, imgScaledWidth, imgScaledHeight);
-
-            // Get pixel data
-            const imageData = tempCtx.getImageData(0, 0, imgScaledWidth, imgScaledHeight);
-            const pixels = imageData.data;
-            const newImageData = ctx.createImageData(imgScaledWidth, imgScaledHeight);
-            const newPixels = newImageData.data;
-
-            // Apply radial distortion
-            const maxRadius = Math.sqrt(imgScaledWidth * imgScaledWidth + imgScaledHeight * imgScaledHeight) / 2;
-            const distortionFactor = lensStrength * 0.5;
-            const oscillation = 1 + 0.1 * Math.sin(elapsedPost * 2);
-
-            for (let py = 0; py < imgScaledHeight; py++) {
-                for (let px = 0; px < imgScaledWidth; px++) {
-                    const normX = (px - imgScaledWidth / 2) / (imgScaledWidth / 2);
-                    const normY = (py - imgScaledHeight / 2) / (imgScaledHeight / 2);
-                    const radius = Math.sqrt(normX * normX + normY * normY);
-                    const theta = Math.atan2(normY, normX);
-                    const k = distortionFactor * oscillation;
-                    const distortedRadius = radius * (1 + k * radius * radius);
-                    const srcX = imgScaledWidth / 2 + distortedRadius * Math.cos(theta) * (imgScaledWidth / 2);
-                    const srcY = imgScaledHeight / 2 + distortedRadius * Math.sin(theta) * (imgScaledHeight / 2);
-                    const srcXInt = Math.min(Math.max(Math.round(srcX), 0), imgScaledWidth - 1);
-                    const srcYInt = Math.min(Math.max(Math.round(srcY), 0), imgScaledHeight - 1);
-                    const destIndex = (py * imgScaledWidth + px) * 4;
-                    const srcIndex = (srcYInt * imgScaledWidth + srcXInt) * 4;
-                    newPixels[destIndex] = pixels[srcIndex];
-                    newPixels[destIndex + 1] = pixels[srcIndex + 1];
-                    newPixels[destIndex + 2] = pixels[srcIndex + 2];
-                    newPixels[destIndex + 3] = pixels[srcIndex + 3];
-                }
-            }
-
-            // Apply oscillation to position
-            const offsetX = lensStrength * imgScaledWidth * 0.05 * Math.cos(elapsedPost * 1.5);
-            const offsetY = lensStrength * imgScaledHeight * 0.05 * Math.sin(elapsedPost * 1.5);
-            ctx.translate(offsetX, offsetY);
-            ctx.putImageData(newImageData, x, y);
-        } catch (e) {
-            console.error("Canvas tainted by cross-origin data:", e);
-            // Fallback: Draw image without distortion
-            ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
-        }
-        ctx.restore();
-    }
-} else if (type === 'wobble') {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
+                    ctx.clip();
+                    if (progress >= 0.99) {
+                        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
+                    } else {
+                        const lensStrength = 0.9 * (1 - eased); // Smoothly reduce magnification
+                        const centerX = x + imgScaledWidth / 2;
+                        const centerY = y + imgScaledHeight / 2;
+                        // Dynamic zoom with subtle oscillation for animation
+                        const zoom = 1 + lensStrength * (1 + 0.1 * Math.sin(elapsedPost * 2));
+                        const offsetX = lensStrength * imgScaledWidth * 0.05 * Math.cos(elapsedPost * 1.5);
+                        const offsetY = lensStrength * imgScaledHeight * 0.05 * Math.sin(elapsedPost * 1.5);
+                        ctx.translate(centerX + offsetX, centerY + offsetY);
+                        ctx.scale(zoom, zoom);
+                        ctx.translate(-centerX, -centerY);
+                        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
+                        ctx.restore();
+                    }
+                } else if (type === 'wobble') {
             ctx.save();
             ctx.beginPath();
             ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
