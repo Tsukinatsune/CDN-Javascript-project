@@ -1,4 +1,4 @@
-  let carouselimagecache = {};
+let carouselimagecache = {};
 
 function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
     const {
