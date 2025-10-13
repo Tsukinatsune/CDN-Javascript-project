@@ -252,7 +252,78 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
                         ctx.drawImage(image, -imgScaledWidth / 2, -imgScaledHeight / 2, imgScaledWidth, imgScaledHeight);
                     }
                     ctx.restore();
-                }  else if (type === 'wobble') {
+                } else if (type === 'lenzoom') {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
+    ctx.clip();
+
+    if (progress >= 0.99) {
+        // No distortion when animation is complete
+        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
+    } else {
+        const lensStrength = 0.9 * (1 - eased); // Smoothly reduce distortion strength
+        const centerX = x + imgScaledWidth / 2;
+        const centerY = y + imgScaledHeight / 2;
+
+        // Create a temporary canvas for pixel manipulation
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = imgScaledWidth;
+        tempCanvas.height = imgScaledHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(image, 0, 0, imgScaledWidth, imgScaledHeight);
+
+        // Get pixel data
+        const imageData = tempCtx.getImageData(0, 0, imgScaledWidth, imgScaledHeight);
+        const pixels = imageData.data;
+        const newImageData = ctx.createImageData(imgScaledWidth, imgScaledHeight);
+        const newPixels = newImageData.data;
+
+        // Apply radial distortion
+        const maxRadius = Math.sqrt(imgScaledWidth * imgScaledWidth + imgScaledHeight * imgScaledHeight) / 2;
+        const distortionFactor = lensStrength * 0.5; // Adjust for desired distortion intensity
+        const oscillation = 1 + 0.1 * Math.sin(elapsedPost * 2); // Keep oscillation for animation
+
+        for (let py = 0; py < imgScaledHeight; py++) {
+            for (let px = 0; px < imgScaledWidth; px++) {
+                // Normalize coordinates to [-1, 1] relative to center
+                const normX = (px - imgScaledWidth / 2) / (imgScaledWidth / 2);
+                const normY = (py - imgScaledHeight / 2) / (imgScaledHeight / 2);
+
+                // Calculate radial distance
+                const radius = Math.sqrt(normX * normX + normY * normY);
+                const theta = Math.atan2(normY, normX);
+
+                // Apply barrel distortion: r' = r * (1 + k * r^2)
+                const k = distortionFactor * oscillation; // Distortion coefficient
+                const distortedRadius = radius * (1 + k * radius * radius);
+
+                // Map back to pixel coordinates
+                const srcX = imgScaledWidth / 2 + distortedRadius * Math.cos(theta) * (imgScaledWidth / 2);
+                const srcY = imgScaledHeight / 2 + distortedRadius * Math.sin(theta) * (imgScaledHeight / 2);
+
+                // Sample the nearest pixel
+                const srcXInt = Math.min(Math.max(Math.round(srcX), 0), imgScaledWidth - 1);
+                const srcYInt = Math.min(Math.max(Math.round(srcY), 0), imgScaledHeight - 1);
+
+                // Copy pixel data
+                const destIndex = (py * imgScaledWidth + px) * 4;
+                const srcIndex = (srcYInt * imgScaledWidth + srcXInt) * 4;
+                newPixels[destIndex] = pixels[srcIndex];     // Red
+                newPixels[destIndex + 1] = pixels[srcIndex + 1]; // Green
+                newPixels[destIndex + 2] = pixels[srcIndex + 2]; // Blue
+                newPixels[destIndex + 3] = pixels[srcIndex + 3]; // Alpha
+            }
+        }
+
+        // Apply subtle oscillation to position
+        const offsetX = lensStrength * imgScaledWidth * 0.05 * Math.cos(elapsedPost * 1.5);
+        const offsetY = lensStrength * imgScaledHeight * 0.05 * Math.sin(elapsedPost * 1.5);
+        ctx.translate(offsetX, offsetY);
+        ctx.putImageData(newImageData, x, y);
+        ctx.restore();
+    }
+} else if (type === 'wobble') {
             ctx.save();
             ctx.beginPath();
             ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
