@@ -3,17 +3,17 @@ let carouselimagecache = {};
 function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
     const {
         dpi = 96,
-        dpr = window.devicePixelRatio || 1,
-        pixelWidth = canvas.width,
-        pixelHeight = canvas.height,
-        resolutionWidth = null,
-        resolutionHeight = null,
-        fitMode = 'contain',
-        loadingAnimation = 'spinner',
-        postLoadAnimation = 'fadezoom',
-        middleAnimation = 'none',
-        exitAnimation = 'fadeout',
-        middleDuration = Infinity
+            dpr = window.devicePixelRatio || 1,
+            pixelWidth = canvas.width,
+            pixelHeight = canvas.height,
+            resolutionWidth = null,
+            resolutionHeight = null,
+            fitMode = 'contain',
+            loadingAnimation = 'spinner',
+            postLoadAnimation = 'fadezoom',
+            middleAnimation = 'none',
+            exitAnimation = 'fadeout',
+            middleDuration = Infinity
     } = options;
 
     const cssDpi = 96;
@@ -81,21 +81,21 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
             }
             ctx.globalAlpha = 1;
         } else if (type === 'circleDownloadSpin') {
-        ctx.strokeStyle = `#00ccff`;
-        const segments = 8;
-        const radius = maxRadius * 0.4;
-        ctx.globalAlpha = 0.7;
-        for (let i = 0; i < segments; i++) {
-            const angle = (elapsed * 3 + (i * 2 * Math.PI / segments)) % (2 * Math.PI);
-            const opacity = 0.3 + 0.7 * (1 - (i / segments));
-            ctx.globalAlpha = opacity;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, angle, angle + Math.PI / 8);
-            ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
-        return true;
-    } else if (type === 'orbit') {
+            ctx.strokeStyle = `#00ccff`;
+            const segments = 8;
+            const radius = maxRadius * 0.4;
+            ctx.globalAlpha = 0.7;
+            for (let i = 0; i < segments; i++) {
+                const angle = (elapsed * 3 + (i * 2 * Math.PI / segments)) % (2 * Math.PI);
+                const opacity = 0.3 + 0.7 * (1 - (i / segments));
+                ctx.globalAlpha = opacity;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, angle, angle + Math.PI / 8);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+            return true;
+        } else if (type === 'orbit') {
             ctx.fillStyle = `#ffc107`;
             const numParticles = 12;
             const orbitRadius = maxRadius * 0.7;
@@ -119,7 +119,13 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
     };
 
     const animatePostLoad = (type, image, drawParams) => {
-        const { x, y, imgScaledWidth, imgScaledHeight, scale } = drawParams;
+        const {
+            x,
+            y,
+            imgScaledWidth,
+            imgScaledHeight,
+            scale
+        } = drawParams;
         const elapsedPost = (Date.now() - loadTime) / 1000;
         const progress = Math.min(elapsedPost / 2, 1);
         const eased = easeOutCubic(progress);
@@ -171,7 +177,7 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
                 ctx.fill();
             }
             ctx.globalAlpha = 1;
-        } else if (type === 'slime') {
+        } else if (type === 'slide') {
             ctx.save();
             ctx.beginPath();
             ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
@@ -198,82 +204,82 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
                 ctx.fill();
             }
             ctx.restore();
-        } else if (type === 'flameAnimation') {
-        ctx.globalAlpha = eased;
-        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
-        const numFlames = 30;
-        ctx.globalAlpha = 1 - eased;
-        for (let i = 0; i < numFlames; i++) {
-            const flameX = x + Math.random() * imgScaledWidth;
-            const baseY = y + imgScaledHeight;
-            const flameProgress = (elapsedPost + Math.random() * 0.5) * 50;
-            const flameY = baseY - flameProgress;
-            const size = (5 + Math.random() * 5) / Math.sqrt(effectiveScale);
-            const hue = 20 + Math.random() * 40; // Red to yellow
-            ctx.fillStyle = `hsla(${hue}, 80%, 50%, ${1 - eased})`;
+        } else if (type === 'flame') {
+            ctx.globalAlpha = eased;
+            ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
+            const numFlames = 30;
+            ctx.globalAlpha = 1 - eased;
+            for (let i = 0; i < numFlames; i++) {
+                const flameX = x + Math.random() * imgScaledWidth;
+                const baseY = y + imgScaledHeight;
+                const flameProgress = (elapsedPost + Math.random() * 0.5) * 50;
+                const flameY = baseY - flameProgress;
+                const size = (5 + Math.random() * 5) / Math.sqrt(effectiveScale);
+                const hue = 20 + Math.random() * 40; // Red to yellow
+                ctx.fillStyle = `hsla(${hue}, 80%, 50%, ${1 - eased})`;
+                ctx.beginPath();
+                ctx.moveTo(flameX, flameY);
+                ctx.quadraticCurveTo(
+                    flameX - size / 2, flameY - size * 2,
+                    flameX, flameY - size * 4
+                );
+                ctx.quadraticCurveTo(
+                    flameX + size / 2, flameY - size * 2,
+                    flameX, flameY
+                );
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        } else if (type === 'bending') {
+            ctx.save();
             ctx.beginPath();
-            ctx.moveTo(flameX, flameY);
-            ctx.quadraticCurveTo(
-                flameX - size / 2, flameY - size * 2,
-                flameX, flameY - size * 4
-            );
-            ctx.quadraticCurveTo(
-                flameX + size / 2, flameY - size * 2,
-                flameX, flameY
-            );
-            ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-    } else if (type === 'bending') {
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
-                    ctx.clip();
+            ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
+            ctx.clip();
 
-                    // Draw the image without distortion as progress approaches 1
-                    if (progress >= 0.99) {
-                        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
-                    } else {
-                        // Spiral bend effect applied to the entire image
-                        const amplitude = 0.1 * (1 - eased); // Amplitude for spiral offset
-                        const frequency = 0.1 * Math.PI; // Frequency for spiral rotation
-                        const spiralAngle = frequency * elapsedPost * (1 - eased); // Spiral rotation
+            // Draw the image without distortion as progress approaches 1
+            if (progress >= 0.99) {
+                ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
+            } else {
+                // Spiral bend effect applied to the entire image
+                const amplitude = 0.1 * (1 - eased); // Amplitude for spiral offset
+                const frequency = 0.1 * Math.PI; // Frequency for spiral rotation
+                const spiralAngle = frequency * elapsedPost * (1 - eased); // Spiral rotation
 
-                        // Center the transformation on the image
-                        ctx.translate(x + imgScaledWidth / 2, y + imgScaledHeight / 2);
+                // Center the transformation on the image
+                ctx.translate(x + imgScaledWidth / 2, y + imgScaledHeight / 2);
 
-                        // Apply spiral transformation
-                        ctx.rotate(spiralAngle * 0.5); // Rotate the image for spiral effect
-                        const offsetX = amplitude * imgScaledWidth * Math.sin(elapsedPost);
-                        const offsetY = amplitude * imgScaledHeight * Math.cos(elapsedPost);
-                        ctx.translate(offsetX, offsetY);
+                // Apply spiral transformation
+                ctx.rotate(spiralAngle * 0.5); // Rotate the image for spiral effect
+                const offsetX = amplitude * imgScaledWidth * Math.sin(elapsedPost);
+                const offsetY = amplitude * imgScaledHeight * Math.cos(elapsedPost);
+                ctx.translate(offsetX, offsetY);
 
-                        // Draw the image centered
-                        ctx.drawImage(image, -imgScaledWidth / 2, -imgScaledHeight / 2, imgScaledWidth, imgScaledHeight);
-                    }
-                    ctx.restore();
-                } else if (type === 'lenzoom') {
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
-                    ctx.clip();
-                    if (progress >= 0.99) {
-                        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
-                    } else {
-                        const lensStrength = 0.9 * (1 - eased); // Smoothly reduce magnification
-                        const centerX = x + imgScaledWidth / 2;
-                        const centerY = y + imgScaledHeight / 2;
-                        // Dynamic zoom with subtle oscillation for animation
-                        const zoom = 1 + lensStrength * (1 + 0.1 * Math.sin(elapsedPost * 2));
-                        const offsetX = lensStrength * imgScaledWidth * 0.05 * Math.cos(elapsedPost * 1.5);
-                        const offsetY = lensStrength * imgScaledHeight * 0.05 * Math.sin(elapsedPost * 1.5);
-                        ctx.translate(centerX + offsetX, centerY + offsetY);
-                        ctx.scale(zoom, zoom);
-                        ctx.translate(-centerX, -centerY);
-                        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
-                        ctx.restore();
-                    }
-                } else if (type === 'wobble') {
+                // Draw the image centered
+                ctx.drawImage(image, -imgScaledWidth / 2, -imgScaledHeight / 2, imgScaledWidth, imgScaledHeight);
+            }
+            ctx.restore();
+        } else if (type === 'lenzoom') {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
+            ctx.clip();
+            if (progress >= 0.99) {
+                ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
+            } else {
+                const lensStrength = 0.9 * (1 - eased); // Smoothly reduce magnification
+                const centerX = x + imgScaledWidth / 2;
+                const centerY = y + imgScaledHeight / 2;
+                // Dynamic zoom with subtle oscillation for animation
+                const zoom = 1 + lensStrength * (1 + 0.1 * Math.sin(elapsedPost * 2));
+                const offsetX = lensStrength * imgScaledWidth * 0.05 * Math.cos(elapsedPost * 1.5);
+                const offsetY = lensStrength * imgScaledHeight * 0.05 * Math.sin(elapsedPost * 1.5);
+                ctx.translate(centerX + offsetX, centerY + offsetY);
+                ctx.scale(zoom, zoom);
+                ctx.translate(-centerX, -centerY);
+                ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
+                ctx.restore();
+            }
+        } else if (type === 'wobble') {
             ctx.save();
             ctx.beginPath();
             ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
@@ -289,6 +295,42 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
             ctx.translate(-imgScaledWidth / 2 + wobbleX, -imgScaledHeight / 2 + wobbleY);
             ctx.drawImage(image, 0, 0, imgScaledWidth, imgScaledHeight);
             ctx.restore();
+        } else if (type === 'swing') {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
+            ctx.clip();
+            const fullRotation = 2 * Math.PI;
+            const rotationSpeed = 0.5;
+            const angle = -fullRotation * (elapsedPost * rotationSpeed) * (1 - eased);
+            ctx.translate(x + imgScaledWidth / 2, y + imgScaledHeight / 2);
+            ctx.rotate(angle);
+            ctx.shadowColor = `rgba(0, 0, 0, ${0.5 * (1 - eased)})`;
+            ctx.shadowBlur = 10 * (1 - eased);
+            ctx.shadowOffsetX = 5 * Math.sin(angle);
+            ctx.shadowOffsetY = 5 * Math.cos(angle);
+            ctx.translate(-imgScaledWidth / 2, -imgScaledHeight / 2);
+            ctx.drawImage(image, 0, 0, imgScaledWidth, imgScaledHeight);
+            ctx.restore();
+        } else if (type == "compress") {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
+            ctx.clip();
+
+            const fullRotation = 2 * Math.PI;
+            const rotationSpeed = 0.5;
+            const angle = fullRotation * (elapsedPost * rotationSpeed) * (1 - eased);
+            ctx.translate(x + imgScaledWidth / 2, y + imgScaledHeight / 2);
+            const depthScale = Math.abs(Math.cos(angle));
+            const flip = Math.sin(angle) < 0 ? -1 : 1;
+            ctx.scale(flip * depthScale, 1);
+            ctx.shadowColor = `rgba(0, 0, 0, ${0.5 * (1 - eased)})`;
+            ctx.shadowBlur = 10 * (1 - eased);
+            ctx.shadowOffsetX = 5 * Math.sin(angle) * depthScale;
+            ctx.shadowOffsetY = 5 * Math.cos(angle);
+            ctx.drawImage(image, -imgScaledWidth / 2, -imgScaledHeight / 2, imgScaledWidth, imgScaledHeight);
+            ctx.restore();
         } else if (type === 'none') {
             ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
             return false;
@@ -297,7 +339,12 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
     };
 
     const animateMiddle = (type, image, drawParams) => {
-        const { x, y, imgScaledWidth, imgScaledHeight } = drawParams;
+        const {
+            x,
+            y,
+            imgScaledWidth,
+            imgScaledHeight
+        } = drawParams;
         const elapsedMiddle = (Date.now() - middleStartTime) / 1000;
         const progress = middleDuration === Infinity ? elapsedMiddle : Math.min(elapsedMiddle / (middleDuration / 1000), 1);
         const eased = easeOutCubic(Math.min(progress, 1));
@@ -339,7 +386,12 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
     };
 
     const animateExit = (type, image, drawParams) => {
-        const { x, y, imgScaledWidth, imgScaledHeight } = drawParams;
+        const {
+            x,
+            y,
+            imgScaledWidth,
+            imgScaledHeight
+        } = drawParams;
         const elapsedExit = (Date.now() - exitStartTime) / 1000;
         const progress = Math.min(elapsedExit / 1.5, 1);
         const eased = easeOutCubic(progress);
@@ -375,29 +427,29 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
             }
             ctx.globalAlpha = 1;
         } else if (type === 'flameAnimation') {
-        ctx.globalAlpha = 1 - eased;
-        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
-        const numFlames = 50;
-        for (let i = 0; i < numFlames; i++) {
-            const flameX = x + Math.random() * imgScaledWidth;
-            const flameY = y + imgScaledHeight - (Math.random() * imgScaledHeight * eased);
-            const size = (8 + Math.random() * 8) / Math.sqrt(effectiveScale);
-            const hue = 20 + Math.random() * 40; // Red to yellow
-            ctx.fillStyle = `hsla(${hue}, 80%, 50%, ${1 - eased})`;
-            ctx.beginPath();
-            ctx.moveTo(flameX, flameY);
-            ctx.quadraticCurveTo(
-                flameX - size / 2, flameY - size * 2,
-                flameX, flameY - size * 4
-            );
-            ctx.quadraticCurveTo(
-                flameX + size / 2, flameY - size * 2,
-                flameX, flameY
-            );
-            ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-    } else if (type === 'slide') {
+            ctx.globalAlpha = 1 - eased;
+            ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
+            const numFlames = 50;
+            for (let i = 0; i < numFlames; i++) {
+                const flameX = x + Math.random() * imgScaledWidth;
+                const flameY = y + imgScaledHeight - (Math.random() * imgScaledHeight * eased);
+                const size = (8 + Math.random() * 8) / Math.sqrt(effectiveScale);
+                const hue = 20 + Math.random() * 40; // Red to yellow
+                ctx.fillStyle = `hsla(${hue}, 80%, 50%, ${1 - eased})`;
+                ctx.beginPath();
+                ctx.moveTo(flameX, flameY);
+                ctx.quadraticCurveTo(
+                    flameX - size / 2, flameY - size * 2,
+                    flameX, flameY - size * 4
+                );
+                ctx.quadraticCurveTo(
+                    flameX + size / 2, flameY - size * 2,
+                    flameX, flameY
+                );
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        } else if (type === 'slide') {
             const offsetX = eased * targetWidth;
             ctx.drawImage(image, x + offsetX, y, imgScaledWidth, imgScaledHeight);
         } else if (type === 'none') {
@@ -425,7 +477,8 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
                 effectiveWidth = resolutionHeight * aspect;
             }
         }
-        let scale, imgScaledWidth, imgScaledHeight, x = 0, y = 0;
+        let scale, imgScaledWidth, imgScaledHeight, x = 0,
+            y = 0;
         if (fitMode === 'stretch') {
             imgScaledWidth = targetWidth;
             imgScaledHeight = targetHeight;
@@ -447,11 +500,22 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
             x = (targetWidth - imgScaledWidth) / 2;
             y = (targetHeight - imgScaledHeight) / 2;
         }
-        return { x, y, imgScaledWidth, imgScaledHeight, scale: scale || 1 };
+        return {
+            x,
+            y,
+            imgScaledWidth,
+            imgScaledHeight,
+            scale: scale || 1
+        };
     }
 
     function drawFinalImage(image, drawParams) {
-        const { x, y, imgScaledWidth, imgScaledHeight } = drawParams;
+        const {
+            x,
+            y,
+            imgScaledWidth,
+            imgScaledHeight
+        } = drawParams;
         ctx.clearRect(0, 0, targetWidth, targetHeight);
         ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
     }
@@ -490,6 +554,7 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
     }
 
     let exitStartTime = null;
+
     function runExitAnimation(image, drawParams, callback) {
         state = 'exiting';
         exitStartTime = Date.now();
@@ -564,4 +629,4 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
             runExitAnimation(img, drawParams, callback);
         }
     };
-}     
+}
