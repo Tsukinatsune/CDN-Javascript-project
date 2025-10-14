@@ -1,5 +1,4 @@
 function lazyLoadImages() {
-  // Inject CSS dynamically
   const style = document.createElement('style');
   style.textContent = `
     img[lazysrc] {
@@ -22,16 +21,30 @@ function lazyLoadImages() {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const img = entry.target;
-        img.src = img.getAttribute('lazysrc');
-        img.onload = () => {
+        const src = img.getAttribute('lazysrc');
+
+        const preloader = new Image();
+        preloader.src = src;
+
+        // Handle successful load
+        preloader.onload = () => {
+          img.src = src; // Set the src only after preloading
           img.style.filter = 'none';
           img.style.transition = 'filter 0.3s ease';
+          img.removeAttribute('lazysrc');
+          observer.unobserve(img);
+          
+          // Disconnect observer if no more images to lazy-load
+          if (document.querySelectorAll('img[lazysrc]').length === 0) {
+            observer.disconnect();
+          }
         };
-        img.removeAttribute('lazysrc');
-        observer.unobserve(img);
-        if (document.querySelectorAll('img[lazysrc]').length === 0) {
-          observer.disconnect();
-        }
+
+        preloader.onerror = () => {
+          console.error(`Failed to load image: ${src}`);
+          img.removeAttribute('lazysrc');
+          observer.unobserve(img);
+        };
       }
     });
   }, observerOptions);
