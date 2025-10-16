@@ -331,6 +331,45 @@ function drawImageNormally(ctx, canvas, imgUrl, options = {}) {
             ctx.shadowOffsetY = 5 * Math.cos(angle);
             ctx.drawImage(image, -imgScaledWidth / 2, -imgScaledHeight / 2, imgScaledWidth, imgScaledHeight);
             ctx.restore();
+        } else if (type === 'glitchv1') {
+              ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(x, y, imgScaledWidth, imgScaledHeight);
+                    ctx.clip();
+                    const initialPixelSize = 20 / effectiveScale; // Start with larger pixels
+                    const finalPixelSize = 2 / effectiveScale; // End with smaller pixels
+                    const pixelSize = initialPixelSize * (1 - eased) + finalPixelSize * eased;
+                    const numPixelsX = Math.ceil(imgScaledWidth / pixelSize);
+                    const numPixelsY = Math.ceil(imgScaledHeight / pixelSize);
+                    const totalPixels = numPixelsX * numPixelsY;
+                    const pixelsToShow = Math.floor(eased * totalPixels * 1.2); // Slightly overshoot to ensure full coverage
+                    const pixelIndices = Array.from({ length: totalPixels }, (_, i) => i);
+                    for (let i = pixelIndices.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [pixelIndices[i], pixelIndices[j]] = [pixelIndices[j], pixelIndices[i]];
+                    }
+                    for (let i = 0; i < Math.min(pixelsToShow, totalPixels); i++) {
+                        const idx = pixelIndices[i];
+                        const px = (idx % numPixelsX) * pixelSize;
+                        const py = Math.floor(idx / numPixelsX) * pixelSize;
+                        ctx.drawImage(
+                            image,
+                            px / scale, py / scale, pixelSize / scale, pixelSize / scale,
+                            x + px, y + py, pixelSize, pixelSize
+                        );
+                    }
+                    // Apply slight resize at the end
+                    if (eased >= 0.99) {
+                        const finalScale = 0.95; // Slightly reduce size for "burhh" effect
+                        ctx.save();
+                        ctx.translate(x + imgScaledWidth / 2, y + imgScaledHeight / 2);
+                        ctx.scale(finalScale, finalScale);
+                        ctx.translate(-(x + imgScaledWidth / 2), -(y + imgScaledHeight / 2));
+                        ctx.clearRect(0, 0, targetWidth, targetHeight);
+                        ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
+                        ctx.restore();
+                    }
+                    ctx.restore();
         } else if (type === 'none') {
             ctx.drawImage(image, x, y, imgScaledWidth, imgScaledHeight);
             return false;
