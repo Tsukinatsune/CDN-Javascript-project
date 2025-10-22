@@ -1,6 +1,8 @@
 use code beautify to make it back normally
-<img align="right" alt="WAH2" src="https://i.giphy.com/3o7btMCltyDvSgF92E.webp" width="320px" />
-![WAH](https://media.tenor.com/DTf5chPXnqoAAAAd/anime.gif)
+<div style="display: flex; justify-content: space-between; align-items: center;">
+  <img align="right" alt="WAH2" src="https://i.giphy.com/3o7btMCltyDvSgF92E.webp" width="320px" />
+  <img alt="WAH" src="https://media.tenor.com/DTf5chPXnqoAAAAd/anime.gif" width="320px" />
+</div>
 
 try watch (『TEMARI』 - Ninomae Ina'nis)
 [here](https://youtube-embed.edgeone.app/?v=LtTO1HMGjqA&si=a&t=0&lapse=0:00%20peak%20music,2:30%20WAH,3:20-DANG!)
