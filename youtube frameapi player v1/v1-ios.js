@@ -214,7 +214,7 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag), document.getElement
     const t = document.getElementById("seekBar").getBoundingClientRect(), a = (e.touches[0].clientX - t.left) / t.width * player.getDuration();
     player.seekTo(a, !0), currentTime = a, player.getPlayerState() !== YT.PlayerState.PLAYING && player.playVideo(), showControls()
 }, { passive: !1 }), document.getElementById("fullscreenBtn").addEventListener("click", () => {
-    const e = document.getElementById("videoContainer"); // Target the iframe directly
+    const e = document.getElementById("videoContainer");
     if (document.fullscreenElement || document.webkitFullscreenElement) {
         if (document.exitFullscreen) document.exitFullscreen();
         else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
