@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Artoriasphere YouTube-Lab v1</title>
+    <link rel="icon" type="image/png" href="https://avatars.githubusercontent.com/u/134393625?s=200&v=4">
+    <link rel="stylesheet" href="v1.css">
+</head>
+<body>
+    <div class="video-container" id="videoContainer">
+        <div class="video-wrapper" id="videoWrapper">
+            <div class="big-play-button" id="bigPlayButton">
+                <svg viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </div>
+        </div>
+        <div class="video-info" id="videoInfo">
+            <div class="title" id="videoTitle"></div>
+            <div class="author" id="videoAuthor"></div>
+        </div>
+        <div class="controls" id="controls">
+            <button id="togglePlayBtn" title="Play">
+                <svg viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </button>
+            <button id="muteBtn" title="Mute">
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3c0-1.77-.77-3.36-2-4.47v8.94c1.23-1.11 2-2.7 2-4.47zM19 12c0 2.21-1.03 4.19-2.65 5.5l1.41 1.41C20.02 16.97 21 14.61 21 12s-.98-4.97-2.24-6.91l-1.41 1.41C18.97 7.81 19 9.79 19 12z"/>
+                </svg>
+            </button>
+            <div class="time-display" id="timeDisplay">0:00:00 / 0:00:00</div>
+            <div class="seek-bar-container">
+                <div class="seek-bar" id="seekBar">
+                    <div class="seek-bar-progress" id="seekBarProgress"></div>
+                </div>
+            </div>
+            <div class="quality-display" id="qualityDisplay">Auto</div>
+            <div class="cc-controls">
+                <button id="ccBtn" title="Closed Captions">CC</button>
+                <div class="cc-dropdown" id="ccDropdown">
+                    <button id="ccOffBtn">CC Off</button>
+                    <button id="ccEnBtn">English CC</button>
+                    <button id="ccThBtn">Thai CC</button>
+                </div>
+            </div>
+            <div class="auto-stop-controls">
+                <button id="autoStopBtn" title="Auto-Stop Timer">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92c-.58.59-.99 1.33-1.14 2.16h-1.94v-.54c0-1.08.44-2.09 1.21-2.85l1.24-1.24c.37-.37.58-.88.58-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H9c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.97 2.25z"/>
+                    </svg>
+                </button>
+                <div class="auto-stop-dropdown" id="autoStopDropdown">
+                    <button id="autoStopOffBtn">Timer Off</button>
+                    <button id="autoStop1MinBtn">1 Minute</button>
+                    <button id="autoStop5MinBtn">5 Minutes</button>
+                    <button id="autoStop10MinBtn">10 Minutes</button>
+                    <button id="autoStop20MinBtn">20 Minutes</button>
+                    <button id="autoStop30MinBtn">30 Minutes</button>
+                    <button id="autoStop40MinBtn">40 Minutes</button>
+                    <button id="autoStop50MinBtn">50 Minutes</button>
+                    <button id="autoStop60MinBtn">60 Minutes</button>
+                    <button id="autoStopEndBtn">End of Video</button>
+                </div>
+            </div>
+            <button id="downloadBtn" title="Download">
+                <svg viewBox="0 0 24 24">
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                </svg>
+            </button>
+            <button id="fullscreenBtn" title="Fullscreen">
+                <svg viewBox="0 0 24 24">
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                </svg>
+            </button>
+        </div>
+        <div id="statusMessage" class="status-message">Loading thumbnail...</div>
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+    <script src="v1.js"></script>
+</body>
+</html>
