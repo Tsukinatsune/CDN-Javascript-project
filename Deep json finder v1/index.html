@@ -4,81 +4,115 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deep JSON Path Finder with Flowchart</title>
-    <meta name="description" content="Explore and visualize JSON data with our Deep JSON Path Finder tool. Upload a JSON file, search for a target value, and view the paths with interactive flowcharts.">
-    <meta name="keywords" content="JSON path finder, JSON viewer, JSON visualization, JSON data analysis, flowchart generator, JSON parser, web development tool">
-    <meta name="author" content="Your Name or Organization">
-    <meta name="robots" content="index, follow">
-    
-    <!-- Open Graph Meta Tags for Social Media -->
-    <meta property="og:title" content="Deep JSON Path Finder">
-    <meta property="og:description" content="A powerful tool to find and visualize paths in JSON data with interactive flowcharts. Upload your JSON file and start exploring!">
-    <meta property="og:image" content="https://i.ytimg.com/vi/KiV612X1ZNA/default.jpg">
-    <meta property="og:url" content="https://yourwebsite.com/json-path-finder">
-    <meta property="og:type" content="website">
-    
-    <!-- Twitter Card Meta Tags -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Deep JSON Path Finder">
-    <meta name="twitter:description" content="Find and visualize JSON data paths with interactive flowcharts using our Deep JSON Path Finder tool.">
-    <meta name="twitter:image" content="https://i.ytimg.com/vi/KiV612X1ZNA/default.jpg">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="https://avatars.githubusercontent.com/u/134393625?s=200&amp;v=4">
+    <link rel="icon" type="image/png" href="https://avatars.githubusercontent.com/u/134393625?s=200&v=4">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://unpkg.com/mermaid@10.9.4/dist/mermaid.min.js"></script>
     <style>
-        .mermaid svg {
-            max-width: 100%;
-            height: auto;
-        }
+        .mermaid svg { max-width: 100%; height: auto; }
         .scrollbar-custom {
-            scrollbar-width: thin;
-            scrollbar-color: #4b5563 #1f2937;
+            scrollbar-width: thin; scrollbar-color: #4b5563 #1f2937;
         }
-        .scrollbar-custom::-webkit-scrollbar {
-            width: 8px;
+        .scrollbar-custom::-webkit-scrollbar { width: 8px; }
+        .scrollbar-custom::-webkit-scrollbar-track { background: #1f2937; }
+        .scrollbar-custom::-webkit-scrollbar-thumb { 
+            background: #4b5563; border-radius: 4px; 
         }
-        .scrollbar-custom::-webkit-scrollbar-track {
-            background: #1f2937;
+        .search-type-badge { 
+            @apply inline-flex px-2 py-1 rounded-full text-xs font-medium mr-2; 
         }
-        .scrollbar-custom::-webkit-scrollbar-thumb {
-            background: #4b5563;
-            border-radius: 4px;
+        .type-value { @apply bg-green-900/20 text-green-400 border border-green-600/30; }
+        .type-key { @apply bg-orange-900/20 text-orange-400 border border-orange-600/30; }
+        .type-index { @apply bg-purple-900/20 text-purple-400 border border-purple-600/30; }
+        .input-method-badge {
+            @apply inline-flex px-2 py-1 rounded-full text-xs font-medium;
+        }
+        .method-file { @apply bg-blue-900/20 text-blue-400 border border-blue-600/30; }
+        .method-api { @apply bg-indigo-900/20 text-indigo-400 border border-indigo-600/30; }
+        .method-text { @apply bg-cyan-900/20 text-cyan-400 border border-cyan-600/30; }
+        .flowchart-tab {
+            @apply inline-flex px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-200;
+        }
+        .flowchart-tab-active {
+            @apply bg-blue-600/20 text-blue-300 border-blue-500 shadow-lg;
+        }
+        .flowchart-tab-inactive {
+            @apply bg-gray-700/50 text-gray-400 border-gray-600 hover:bg-gray-700/30 hover:text-gray-300;
         }
     </style>
 </head>
 <body class="bg-gray-900 min-h-screen flex flex-col items-center justify-start py-6 px-4 text-gray-100">
     <div class="bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg md:max-w-2xl mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-center text-blue-400">Deep JSON Path Finder</h1>
+        <p class="text-center text-gray-400 mb-6 text-sm">Find values <span class="text-green-400">OR</span> keys <span class="text-green-400">OR</span> indices <span class="text-green-400">OR</span> booleans</p>
         
         <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-300 mb-2" for="jsonFile">
-                Upload JSON File
-            </label>
-            <input type="file" id="jsonFile" accept=".json" 
-                   class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 
-                          file:rounded-md file:border-0 file:text-sm file:font-semibold 
-                          file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+            <div class="flex flex-wrap justify-center gap-2 mb-4">
+                <button class="input-method-badge method-file ring-2 ring-offset-2 ring-blue-500" id="methodFile">📁 File</button>
+                <button class="input-method-badge method-api" id="methodApi">🌐 API</button>
+                <button class="input-method-badge method-text" id="methodText">✏️ Text</button>
+            </div>
+            
+            <div id="inputFile" class="input-section">
+                <label class="block text-sm font-medium text-gray-300 mb-2" for="jsonFile">Upload JSON File</label>
+                <input type="file" id="jsonFile" accept=".json" 
+                       class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+            </div>
+            
+            <div id="inputApi" class="input-section hidden">
+                <label class="block text-sm font-medium text-gray-300 mb-2" for="apiUrl">API URL</label>
+                <input type="url" id="apiUrl" placeholder="https://jsonplaceholder.typicode.com/users" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-100">
+                <p class="text-xs text-gray-500 mt-1">Supports JSON endpoints (CORS required)</p>
+            </div>
+            
+            <div id="inputText" class="input-section hidden">
+                <label class="block text-sm font-medium text-gray-300 mb-2" for="jsonText">JSON Text</label>
+                <textarea id="jsonText" rows="6" 
+                          placeholder='{"users": [{"id": 1, "name": "Alice", "active": true}, {"id": 2, "name": "Bob", "active": false}]}' 
+                          class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-100 resize-y scrollbar-custom font-mono text-sm"></textarea>
+            </div>
         </div>
         
         <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-300 mb-2" for="targetValue">
-                Target Value
-            </label>
-            <input type="text" id="targetValue" placeholder="Enter value to find" 
-                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md 
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100">
+            <label class="block text-sm font-medium text-gray-300 mb-2" for="targetValue">Target to Find</label>
+            <input type="text" id="targetValue" placeholder="Enter value, key, index, or boolean (e.g., 42, 'id', 5, true, false)" 
+                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100">
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div class="flex flex-col sm:flex-row gap-4">
+                <label class="flex items-center">
+                    <input type="radio" name="searchType" value="both" id="searchBoth" checked class="mr-2">
+                    <span class="text-sm text-gray-300">Search <span class="font-semibold">All</span></span>
+                </label>
+                <label class="flex items-center">
+                    <input type="radio" name="searchType" value="value" id="searchValue" class="mr-2">
+                    <span class="text-sm text-gray-300">Values <span class="text-green-400 font-semibold">Only</span></span>
+                </label>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <label class="flex items-center">
+                    <input type="radio" name="searchType" value="key" id="searchKey" class="mr-2">
+                    <span class="text-sm text-gray-300">Keys <span class="text-orange-400 font-semibold">Only</span></span>
+                </label>
+                <label class="flex items-center">
+                    <input type="radio" name="searchType" value="index" id="searchIndex" class="mr-2">
+                    <span class="text-sm text-gray-300">Indices <span class="text-purple-400 font-semibold">Only</span></span>
+                </label>
+            </div>
         </div>
         
         <button id="findPaths" 
-                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 
-                       disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" disabled>
-            Find Paths
+                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" disabled>
+            <span id="buttonText">Find Paths</span>
+            <span id="loadingSpinner" class="hidden ml-2 inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
         </button>
+        
+        <div id="currentMethod" class="mt-4 text-center text-sm text-gray-400 hidden"></div>
         
         <div id="results" class="mt-6 hidden">
             <h2 class="text-lg font-semibold mb-3 text-gray-200">Results</h2>
-            <div id="paths" style="display: none;" class="bg-gray-900 p-4 rounded-md max-h-64 sm:max-h-80 overflow-y-auto border border-gray-700 mb-4 scrollbar-custom"></div>
+            <div id="paths" class="bg-gray-900 p-4 rounded-md max-h-64 sm:max-h-80 overflow-y-auto border border-gray-700 mb-4 scrollbar-custom"></div>
             
             <div id="pathSelection" class="mb-4 hidden">
                 <label for="pathSelect" class="block text-sm font-medium text-gray-300 mb-2">Select Path for Flowchart</label>
@@ -93,218 +127,48 @@
         <div id="error" class="mt-4 text-red-400 hidden"></div>
     </div>
 
-    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg md:max-w-2xl">
-        <h2 class="text-xl sm:text-2xl font-bold mb-4 text-center text-blue-400">Path Finding Flowchart</h2>
-        <div id="flowchart" class="mermaid">
-            graph TD
-                A[Start: findInDeepStructure] --> B{Is Data Array?}
-                B -- Yes --> C[Iterate Array Items]
-                C --> D{Item Matches Target?}
-                D -- Yes --> E[Add Path to Results]
-                D --> F{Item is Array/Object?}
-                F -- Yes --> G[Recurse findInDeepStructure]
-                G --> H[Return Results]
-                F --> H
-                B -- No --> I{Is Data Object?}
-                I -- Yes --> J[Iterate Object Entries]
-                J --> K{Value Matches Target?}
-                K -- Yes --> L[Add Path to Results]
-                K --> M{Value is Array/Object?}
-                M -- Yes --> N[Recurse findInDeepStructure]
-                N --> H
-                M --> H
-                I --> H
-                H --> O[End]
+    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg md:max-w-4xl mb-6">
+        <div class="flex flex-wrap justify-center gap-4 mb-6">
+            <button class="flowchart-tab flowchart-tab-active" id="tabHowItWorks">🎯 How It Works</button>
+        </div>
+
+        <div id="flowchartHowItWorks" class="flowchart-section">
+            <h2 class="text-xl sm:text-2xl font-bold mb-4 text-center text-blue-400">🎯 Complete Workflow</h2>
+            <div class="bg-gray-900 p-4 rounded-md border border-blue-700/50 mb-4">
+                <div class="mermaid">
+graph TD
+    A[1. Choose Input] --> B{2. Load JSON}
+    B --> C[3. Enter Target]
+    C --> D[4. Choose Type]
+    D --> E[5. Find Paths]
+    E --> F[6. Deep Search]
+    F --> G[7. Collect Paths]
+    G --> H[8. Display Results]
+    H --> I[Done]
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-300">
+                <div class="bg-gray-900/50 p-3 rounded-lg border border-green-600/30">
+                    <div class="font-semibold text-green-400 mb-1">💎 VALUES</div>
+                    <div class="text-gray-400">`42`, `"Alice"`, `true`</div>
+                </div>
+                <div class="bg-gray-900/50 p-3 rounded-lg border border-orange-600/30">
+                    <div class="font-semibold text-orange-400 mb-1">🔑 KEYS</div>
+                    <div class="text-gray-400">`"id"`, `"name"`</div>
+                </div>
+                <div class="bg-gray-900/50 p-3 rounded-lg border border-purple-600/30">
+                    <div class="font-semibold text-purple-400 mb-1">📍 INDICES</div>
+                    <div class="text-gray-400">`0`, `1`, `42`</div>
+                </div>
+                <div class="bg-gray-900/50 p-3 rounded-lg border border-indigo-600/30">
+                    <div class="font-semibold text-indigo-400 mb-1">✅ BOOLEANS</div>
+                    <div class="text-gray-400">`true`, `false`</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script>
-        // Initialize Mermaid
-        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
-
-        function findInDeepStructure(data, target, path = [], results = []) {
-            if (Array.isArray(data)) {
-                data.forEach((item, index) => {
-                    const currentPath = [...path, index];
-                    if (item === target || (item === Number(target) && !isNaN(target))) {
-                        results.push(currentPath);
-                    }
-                    if (Array.isArray(item) || (item && typeof item === 'object')) {
-                        findInDeepStructure(item, target, currentPath, results);
-                    }
-                });
-            } else if (data && typeof data === 'object') {
-                Object.entries(data).forEach(([key, value]) => {
-                    const currentPath = [...path, key];
-                    if (value === target || (value === Number(target) && !isNaN(target))) {
-                        results.push(currentPath);
-                    }
-                    if (Array.isArray(value) || (value && typeof value === 'object')) {
-                        findInDeepStructure(value, target, currentPath, results);
-                    }
-                });
-            }
-            return results;
-        }
-
-        function getValueFromPath(jsonData, path) {
-            let current = jsonData;
-            for (const step of path) {
-                if (current === null || current === undefined) {
-                    return undefined; // Path is invalid or value doesn't exist
-                }
-                current = current[step];
-            }
-            return current;
-        }
-
-        function formatPath(path) {
-            return path.map((step, i) => {
-                const isNumber = typeof step === 'number';
-                const stepText = isNumber ? step : step;
-                return i === 0 
-                    ? `<span class="text-purple-400">top</span>`
-                    : `<span class="text-blue-400"> -> </span><span class="${isNumber ? 'text-green-400' : 'text-yellow-400'}">${stepText}</span>`;
-            }).join('');
-        }
-
-        function generatePathFlowchart(path, pathIndex) {
-            let mermaidCode = `graph TD\n`;
-            let previousNode = `Start_${pathIndex}`;
-            mermaidCode += `    ${previousNode}[Start: top]\n`;
-            
-            path.forEach((step, stepIndex) => {
-                const isNumber = typeof step === 'number';
-                const stepText = isNumber ? `Index: ${step}` : `Key: ${step}`;
-                const currentNode = `P${pathIndex}_S${stepIndex}`;
-                mermaidCode += `    ${currentNode}["${stepText}"]\n`;
-                if (stepIndex === 0) {
-                    mermaidCode += `    ${previousNode} --> ${currentNode}\n`;
-                } else {
-                    mermaidCode += `    ${previousNode} --> ${currentNode}\n`;
-                }
-                previousNode = currentNode;
-            });
-            
-            // Add target value node
-            const targetNode = `Target_${pathIndex}`;
-            mermaidCode += `    ${targetNode}[Target Value: ${targetValueInput.value.trim()}]\n`;
-            mermaidCode += `    ${previousNode} --> ${targetNode}\n`;
-
-            return mermaidCode;
-        }
-
-        const jsonFileInput = document.getElementById('jsonFile');
-        const targetValueInput = document.getElementById('targetValue');
-        const findPathsButton = document.getElementById('findPaths');
-        const resultsDiv = document.getElementById('results');
-        const pathsDiv = document.getElementById('paths');
-        const pathFlowchartsDiv = document.getElementById('pathFlowcharts');
-        const pathSelect = document.getElementById('pathSelect');
-        const pathSelectionDiv = document.getElementById('pathSelection');
-        const errorDiv = document.getElementById('error');
-
-        let jsonData = null;
-        let paths = [];
-
-        function updateButtonState() {
-            findPathsButton.disabled = !jsonData || !targetValueInput.value.trim();
-        }
-
-        jsonFileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    jsonData = JSON.parse(e.target.result);
-                    errorDiv.classList.add('hidden');
-                    updateButtonState();
-                } catch (err) {
-                    errorDiv.textContent = 'Invalid JSON file';
-                    errorDiv.classList.remove('hidden');
-                    jsonData = null;
-                    updateButtonState();
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        targetValueInput.addEventListener('input', updateButtonState);
-
-        findPathsButton.addEventListener('click', () => {
-            const target = targetValueInput.value.trim();
-            if (!jsonData || !target) return;
-
-            try {
-                paths = findInDeepStructure(jsonData, target);
-                pathsDiv.innerHTML = '';
-                pathFlowchartsDiv.innerHTML = '';
-                pathSelect.innerHTML = '<option value="">Select a path</option>';
-                pathSelectionDiv.classList.add('hidden');
-
-                if (paths.length === 0) {
-                    pathsDiv.innerHTML = '<p class="text-gray-400">No paths found for the target value.</p>';
-                    pathFlowchartsDiv.innerHTML = '<div class="mermaid">graph TD\nA[No Paths Found]</div>';
-                } else {
-                    // Render textual paths
-                    paths.forEach((path, i) => {
-                        const pathElement = document.createElement('div');
-                        pathElement.className = 'mb-2 p-2 bg-gray-800 rounded-md';
-                        pathElement.innerHTML = `<span class="text-gray-300 font-semibold">Path ${i + 1}:</span> ${formatPath(path)}`;
-                        pathsDiv.appendChild(pathElement);
-
-                        // Add to select dropdown
-                        const option = document.createElement('option');
-                        option.value = i;
-                        option.textContent = `Path ${i + 1}`;
-                        pathSelect.appendChild(option);
-                    });
-
-                    // Show path selection if multiple paths
-                    if (paths.length > 1) {
-                        pathSelectionDiv.classList.remove('hidden');
-                    }
-
-                    // Render first path flowchart and target value by default
-                    if (paths.length > 0) {
-                        const mermaidCode = generatePathFlowchart(paths[0], 0);
-                        pathFlowchartsDiv.innerHTML = `<div class="mermaid">${mermaidCode}</div>`;
-                        const targetValue = getValueFromPath(jsonData, paths[0]);
-                        const valueDisplay = document.createElement('div');
-                        valueDisplay.className = 'mt-4 p-2 bg-gray-800 rounded-md text-gray-100';
-                        valueDisplay.textContent = `Target Value: ${targetValue !== undefined ? JSON.stringify(targetValue) : 'Not found'}`;
-                        pathFlowchartsDiv.appendChild(valueDisplay);
-                        mermaid.run({ nodes: [pathFlowchartsDiv.querySelector('.mermaid')] });
-                    }
-                }
-                
-                resultsDiv.classList.remove('hidden');
-                errorDiv.classList.add('hidden');
-            } catch (err) {
-                errorDiv.textContent = 'Error processing JSON';
-                errorDiv.classList.remove('hidden');
-                resultsDiv.classList.add('hidden');
-            }
-        });
-
-        pathSelect.addEventListener('change', () => {
-            const selectedPathIndex = parseInt(pathSelect.value);
-            if (!isNaN(selectedPathIndex)) {
-                pathFlowchartsDiv.innerHTML = '';
-                const mermaidCode = generatePathFlowchart(paths[selectedPathIndex], selectedPathIndex);
-                pathFlowchartsDiv.innerHTML = `<div class="mermaid">${mermaidCode}</div>`;
-                const targetValue = getValueFromPath(jsonData, paths[selectedPathIndex]);
-                const valueDisplay = document.createElement('div');
-                valueDisplay.className = 'mt-4 p-2 bg-gray-800 rounded-md text-gray-100';
-                valueDisplay.textContent = `Target Value: ${targetValue !== undefined ? JSON.stringify(targetValue) : 'Not found'}`;
-                pathFlowchartsDiv.appendChild(valueDisplay);
-                mermaid.run({ nodes: [pathFlowchartsDiv.querySelector('.mermaid')] });
-            } else {
-                pathFlowchartsDiv.innerHTML = '';
-            }
-        });
-    </script>
+    <script src="library.js"></script>
+    <script src="corev2.js"></script>
 </body>
 </html>
