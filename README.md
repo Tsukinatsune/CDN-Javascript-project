@@ -6,7 +6,7 @@ A javascript project that may useful for u
 
 we use service from
 
-[![](https://raw.githubusercontent.com/jsdelivr/jsdelivr-media/68eb16a653e8f4e44a111371be3c1d41b0bfdb57/white/svg/jsdelivr-icon.svg)
+![](https://raw.githubusercontent.com/jsdelivr/jsdelivr-media/68eb16a653e8f4e44a111371be3c1d41b0bfdb57/white/svg/jsdelivr-icon.svg)
 
 
 
