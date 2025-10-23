@@ -29,4 +29,4 @@ This project uses services from:
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-plain.svg" alt="JavaScript" width="40" height="40" />
 </p>
 
-Written entirely in **JavaScript**.
+]
