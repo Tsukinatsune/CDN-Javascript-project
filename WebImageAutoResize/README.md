@@ -4,4 +4,4 @@
 
 ---
 
-u can use it for free [here](https://vidplayerforios-asp.pages.dev/WebImageAutoResize/)!
+u can use it for free [here](https://vidplayerforios-asp.pages.dev/webimageautoresize/)!
