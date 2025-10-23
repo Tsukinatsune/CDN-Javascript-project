@@ -19,7 +19,8 @@ This project uses services from:
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/jsdelivr/jsdelivr-media/68eb16a653e8f4e44a111371be3c1d41b0bfdb57/white/svg/jsdelivr-icon.svg" alt="jsDelivr" width="100"/>
-  <img src="https://raw.githubusercontent.com/jsdelivr/jsdelivr-media/68eb16a653e8f4e44a111371be3c1d41b0bfdb57/white/svg/jsdelivr-icon.svg" alt="jsDelivr" width="100"/>
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original-wordmark.svg" alt="jsDelivr" width="100"/>
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original-wordmark.svg" alt="jsDelivr" width="100"/>
 </p>
 
 ---
@@ -30,4 +31,5 @@ This project uses services from:
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-plain.svg" alt="JavaScript" width="40" height="40" />
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/html5/html5-plain.svg" alt="JavaScript" width="40" height="40" />
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/css3/css3-plain.svg" alt="JavaScript" width="40" height="40" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/markdown/markdown-original.svg" alt="JavaScript" width="40" height="40" />
 </p>
