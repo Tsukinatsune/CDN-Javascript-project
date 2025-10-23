@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebImageAutoResize</title>
+    <link rel="icon" type="image/png" href="https://avatars.githubusercontent.com/u/134393625?s=200&amp;v=4">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="WebImageAutoResize - Free PWA Icon Generator & App Manifest Creator">
+    <meta property="og:description" content="Generate all PWA icons (16x16 to 512x512) and app manifest instantly from any image URL. No software download required. Perfect for Progressive Web Apps.">
+    <meta property="og:image" content="https://avatars.githubusercontent.com/u/134393625?s=200&v=4">
+    <meta property="og:url" content="https://yourdomain.com/webimageautoresize">
+    <meta property="og:site_name" content="WebImageAutoResize">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="WebImageAutoResize - Free PWA Icon Generator & App Manifest Creator">
+    <meta name="twitter:description" content="Generate all PWA icons (16x16 to 512x512) and app manifest instantly from any image URL. No software download required.">
+    <meta name="twitter:image" content="https://avatars.githubusercontent.com/u/134393625?s=200&v=4">
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Free online PWA icon generator. Create all required app icons (16x16, 32x32, 48x48, 72x72, 96x96, 128x128, 144x144, 152x152, 192x192, 384x384, 512x512) and manifest.json from any image URL instantly.">
+    
+    <meta name="keywords" content="PWA icon generator, progressive web app icons, app manifest generator, favicon generator, web app icons, free icon resizer, PWA manifest, icon generator online, app icon creator">
+    
+    <meta name="author" content="Tsukinatsune">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#7c3aed">
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "WebImageAutoResize",
+        "description": "Free online tool to generate PWA icons and app manifest from any image URL",
+        "url": "https://yourdomain.com/webimageautoresize",
+        "applicationCategory": "DeveloperApplication",
+        "featureList": [
+            "PWA Icon Generation",
+            "Multiple Icon Sizes",
+            "App Manifest Creation",
+            "One-Click Download",
+            "No Software Required"
+        ],
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "operatingSystem": "Web Browser",
+        "screenshot": "https://avatars.githubusercontent.com/u/134393625?s=200&v=4"
+    }
+    </script>
+    <meta name="googlebot" content="index, follow">
+    <meta name="bingbot" content="index, follow">
+    <meta name="revisit-after" content="7 days">
+    <script src="https://cdn.jsdelivr.net/gh/Tsukinatsune/CDN-Javascript-project@master/WebImageAutoResize/library.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #242440;
+            --bg-glass: rgba(36, 36, 64, 0.6);
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8d4;
+            --accent: #7c3aed;
+            --accent-hover: #a855f7;
+            --success: #10b981;
+            --success-hover: #34d399;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --border: #333350;
+            --glass-border: rgba(124, 58, 237, 0.2);
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --shadow-hover: 0 35px 60px -12px rgba(0, 0, 0, 0.7);
+            --glow: 0 0 30px rgba(124, 58, 237, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transform: translateZ(0);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(45deg, #ffffff, #e0d7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.2em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.95em;
+        }
+
+        input[type="url"], input[type="text"] {
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            font-size: 16px;
+            color: var(--text-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        input[type="url"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: var(--glow);
+            transform: translateY(-2px);
+        }
+
+        input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .preview {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .preview img {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 4px solid var(--glass-border);
+            transform: perspective(1000px) rotateY(0deg);
+            transition: all 0.4s ease;
+        }
+
+        .preview img:hover {
+            transform: perspective(1000px) rotateY(10deg) rotateX(5deg);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            min-width: 180px;
+            justify-content: center;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-4px) rotateX(5deg);
+            box-shadow: var(--shadow-hover), var(--glow);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), var(--success-hover));
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-4px) rotateX(5deg);
+            box-shadow: var(--shadow-hover), 0 0 30px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .results {
+            margin-top: 40px;
+        }
+
+        .results h3 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--accent);
+            font-size: 1.8em;
+            background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        .icon-preview {
+            text-align: center;
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 2px solid var(--border);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transform: translateZ(0);
+        }
+
+        .icon-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--accent), var(--success));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 0;
+        }
+
+        .icon-preview:hover {
+            transform: translateY(-8px) rotateX(10deg) rotateY(5deg);
+            box-shadow: var(--shadow-hover), var(--glow);
+            border-color: var(--accent);
+        }
+
+        .icon-preview:hover::before {
+            opacity: 0.1;
+        }
+
+        .icon-preview > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .icon-preview img {
+            width: 72px;
+            height: 72px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .icon-preview:hover img {
+            transform: scale(1.1);
+        }
+
+        .icon-preview .label {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+
+        .icon-preview .size {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .status {
+            padding: 16px 24px;
+            border-radius: 16px;
+            margin: 20px 0;
+            font-weight: 600;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid;
+        }
+
+        .status.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .status.loading {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .status.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .content {
+                padding: 24px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .results-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>WebImageAutoResize</h1>
+            <p>Progressive web app icons generator</p>
+        </div>
+
+        <div class="content">
+            <div class="input-group">
+                <div class="input-row">
+                    <div class="form-group">
+                        <label for="imageUrl">Image URL</label>
+                        <input type="url" id="imageUrl" placeholder="https://example.com/logo.png" 
+                               value="https://cdn.jsdelivr.net/gh/Tsukinatsune/Custom-streamlabs---Chatbox@master/Image%20(1).png">
+                    </div>
+                    <div class="form-group">
+                        <label for="appName">App Name</label>
+                        <input type="text" id="appName" placeholder="My Awesome App" value="Artoriasphere">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="form-group">
+                        <label for="shortName">Short Name</label>
+                        <input type="text" id="shortName" placeholder="App" value="ASP">
+                    </div>
+                    <div class="form-group">
+                        <label for="themeColor">Theme Color</label>
+                        <input type="text" id="themeColor" placeholder="#7c3aed" value="#7c3aed">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <input type="text" id="description" placeholder="PWA Ready App" value="Free to use!">
+                </div>
+            </div>
+
+            <div class="preview" id="preview">
+                <h3>📸 Preview</h3>
+                <img id="previewImg" alt="Preview">
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="generateBtn">
+                    ✨ Generate Icons
+                </button>
+                <button class="btn btn-success" id="downloadBtn" disabled>
+                    📥 Download All
+                </button>
+            </div>
+
+            <div id="status" style="display: none;"></div>
+
+            <div class="results" id="results" style="display: none;">
+                <h3>✨ Generated Icons (Click to Download)</h3>
+                <div class="results-grid" id="resultsGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentResult = null;
+
+        const elements = {
+            imageUrl: document.getElementById('imageUrl'),
+            appName: document.getElementById('appName'),
+            shortName: document.getElementById('shortName'),
+            themeColor: document.getElementById('themeColor'),
+            description: document.getElementById('description'),
+            generateBtn: document.getElementById('generateBtn'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            preview: document.getElementById('preview'),
+            previewImg: document.getElementById('previewImg'),
+            status: document.getElementById('status'),
+            results: document.getElementById('results'),
+            resultsGrid: document.getElementById('resultsGrid')
+        };
+
+        // Show preview when URL changes
+        elements.imageUrl.addEventListener('input', () => {
+            const url = elements.imageUrl.value;
+            if (url) {
+                elements.previewImg.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                elements.preview.style.display = 'block';
+            }
+        });
+
+        // Auto-show preview on load
+        window.addEventListener('load', () => {
+            elements.imageUrl.dispatchEvent(new Event('input'));
+        });
+
+        // Generate button
+        elements.generateBtn.addEventListener('click', async () => {
+            const url = elements.imageUrl.value.trim();
+            if (!url) {
+                showStatus('Please enter an image URL', 'error');
+                return;
+            }
+
+            elements.generateBtn.disabled = true;
+            elements.generateBtn.innerHTML = '⏳ Generating...';
+            showStatus('🎨 Generating all icons and manifest...', 'loading');
+
+            try {
+                currentResult = await WebImageAutoResize.generate(url, {
+                    name: elements.appName.value,
+                    short_name: elements.shortName.value,
+                    themeColor: elements.themeColor.value,
+                    description: elements.description.value,
+                    backgroundColor: '#0a0a0f'
+                });
+
+                showStatus('✅ Successfully generated all icons and manifest!', 'success');
+                elements.downloadBtn.disabled = false;
+                displayResults(currentResult);
+                elements.results.style.display = 'block';
+
+            } catch (error) {
+                console.error(error);
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                elements.generateBtn.disabled = false;
+                elements.generateBtn.innerHTML = '✨ Generate Icons';
+            }
+        });
+
+        // Download button
+        elements.downloadBtn.addEventListener('click', async () => {
+            if (currentResult) {
+                elements.downloadBtn.disabled = true;
+                elements.downloadBtn.innerHTML = '⏳ Downloading...';
+                await currentResult.downloadAll('pwa-icons');
+                elements.downloadBtn.disabled = false;
+                elements.downloadBtn.innerHTML = '📥 Download All';
+                showStatus('✅ All files downloaded!', 'success');
+            }
+        });
+
+        function showStatus(message, type) {
+            elements.status.textContent = message;
+            elements.status.className = `status ${type}`;
+            elements.status.style.display = 'block';
+            
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    elements.status.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function displayResults(result) {
+            elements.resultsGrid.innerHTML = '';
+            
+            result.sizes.forEach(({size, blobUrl, label}) => {
+                const div = document.createElement('div');
+                div.className = 'icon-preview';
+                div.innerHTML = `
+                    <img src="${blobUrl}" alt="${size}x${size}" loading="lazy">
+                    <div class="label">${label}</div>
+                    <div class="size">${size}×${size}</div>
+                `;
+                
+                // Click to download individual icon
+                div.addEventListener('click', () => {
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = `icon-${size}x${size}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                });
+                
+                elements.resultsGrid.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
