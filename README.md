@@ -2,7 +2,7 @@
 
 [![jsDelivr](https://data.jsdelivr.com/v1/package/gh/Tsukinatsune/CDN-Javascript-project/badge)](https://www.jsdelivr.com/package/gh/Tsukinatsune/CDN-Javascript-project)
 
-![Free Service](https://raw.githubusercontent.com/Tsukinatsune/CDN-Javascript-project/3fb65a5d3c3a02bbcba349ec077da07ec9ae6908/freeservice.svg)
+[![Free Service](https://raw.githubusercontent.com/Tsukinatsune/CDN-Javascript-project/3fb65a5d3c3a02bbcba349ec077da07ec9ae6908/freeservice.svg)](https://vidplayerforios-asp.pages.dev/Tsukinatsune/CDN-Javascript-project)
 
 ---
 
@@ -28,5 +28,3 @@ This project uses services from:
 <p align="center">
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-plain.svg" alt="JavaScript" width="40" height="40" />
 </p>
-
-]
