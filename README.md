@@ -1,4 +1,4 @@
-# 🌐 CDN JavaScript Project
+# CDN JavaScript Project
 
 [![jsDelivr](https://data.jsdelivr.com/v1/package/gh/Tsukinatsune/CDN-Javascript-project/badge)](https://www.jsdelivr.com/package/gh/Tsukinatsune/CDN-Javascript-project)
 
