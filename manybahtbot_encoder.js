@@ -1,6 +1,6 @@
 const Z = {
         exp: 65537n, 
-        mod: 187369139414118808416340277n
+        mod: 192837004201283148238666363n
     };
 
     function modPow(base, exp, mod) {
