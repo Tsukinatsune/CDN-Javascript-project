@@ -134,8 +134,5 @@ const L = {
         );
     }
 };
+L.init()
 const Laibaht = L.L
-(async () => {
-    await L.init(); 
-    console.log(Laibaht("https://www.youtube.com/watch?v=dQw4w9WgXcQ"));
-})();
