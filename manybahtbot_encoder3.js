@@ -18,7 +18,7 @@ const L = {
             a.length > b.length ? a : b, ""
         );
         if (foundMod) {
-            this.MOD = BigInt(foundMod);
+            L.MOD = BigInt(foundMod);
         }
     },
 
@@ -36,7 +36,7 @@ const L = {
 
     encryptId(idString) {
         const bytes = new TextEncoder().encode(idString);
-        const blockSize = this.BLOCK_SIZE;
+        const blockSize = L.BLOCK_SIZE;
         let resultBytes = [];
 
         for (let i = 0; i < bytes.length; i += blockSize) {
@@ -46,7 +46,7 @@ const L = {
                 .join('');
 
             const num = BigInt('0x' + (hex || '0'));
-            const encrypted = this.modPow(num, this.EXP, this.MOD);
+            const encrypted = L.modPow(num, L.EXP, L.MOD);
 
             let encHex = encrypted.toString(16).padStart(blockSize * 2, '0');
             for (let j = 0; j < encHex.length; j += 2) {
@@ -74,8 +74,8 @@ const L = {
             if (!v) return null;
 
             const clean = new URL("https://play.laibaht.ovh/watch");
-            clean.searchParams.set("v", this.encryptId(v));
-            if (list) clean.searchParams.set("list", this.encryptId(list));
+            clean.searchParams.set("v", L.encryptId(v));
+            if (list) clean.searchParams.set("list", L.encryptId(list));
 
             return clean.toString();
         } catch {
@@ -92,9 +92,9 @@ const L = {
             const type = m[1];
             const id = m[3] ? m[3].replace('share-', '') : m[2];
 
-            if (!id || !this.SPOTIFY_DOMAINS[type]) return null;
+            if (!id || !L.SPOTIFY_DOMAINS[type]) return null;
 
-            return this.SPOTIFY_DOMAINS[type] + this.encryptId(id);
+            return L.SPOTIFY_DOMAINS[type] + L.encryptId(id);
         } catch {
             return null;
         }
@@ -117,7 +117,7 @@ const L = {
             if (!m) return null;
 
             const [, region, type, id] = m;
-            return `https://ap.laibaht.ovh/${region}/${type}/${this.encryptId(id)}`;
+            return `https://ap.laibaht.ovh/${region}/${type}/${L.encryptId(id)}`;
         } catch {
             return null;
         }
@@ -128,11 +128,11 @@ const L = {
         inputUrl = inputUrl.trim();
 
         return (
-            this.parseYouTube(inputUrl) ||
-            this.parseSpotify(inputUrl) ||
-            this.parseAppleMusic(inputUrl)
+            L.parseYouTube(inputUrl) ||
+            L.parseSpotify(inputUrl) ||
+            L.parseAppleMusic(inputUrl)
         );
     }
 };
+
 L.init()
-const Laibaht = L.L
