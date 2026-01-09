@@ -123,7 +123,7 @@ const L = {
         }
     },
 
-    L(inputUrl) {
+    Laibaht(inputUrl) {
         if (!inputUrl || typeof inputUrl !== 'string') return null;
         inputUrl = inputUrl.trim();
 
