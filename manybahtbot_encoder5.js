@@ -10,8 +10,8 @@ const L = {
         playlist: "https://sp.laibaht.ovh/playlist/",
         wrapped:  "https://sp.laibaht.ovh/wrapped/"
     },
-    async init() {
-        const response = await fetch('https://play.manybahtpage.com/_next/static/chunks/app/page-482f7ba09d6a61cb.js');
+    async init(modurl) {
+        const response = await fetch(modurl);
         const text = await response.text();
         
         const foundMod = (text.match(/\d{10,}/g) || []).reduce((a, b) => 
@@ -134,5 +134,13 @@ const L = {
         );
     }
 };
-
-L.init()
+const target = "https://play.manybahtpage.com/";
+fetch(target)
+  .then(res => res.text())
+  .then(html => {
+    const regex = /\/_next\/static\/chunks\/app\/[^\s"'<>]+\.js/g;
+    const matches = html.match(regex) || [];
+    const fullLinks = matches.map(path => new URL(path, target).href);
+    L.init(fullLinks)
+  })
+  .catch(err => console.error(err));
