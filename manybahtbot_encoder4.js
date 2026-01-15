@@ -11,7 +11,7 @@ const L = {
         wrapped:  "https://sp.laibaht.ovh/wrapped/"
     },
     async init() {
-        const response = await fetch('https://play.manybahtpage.com/_next/static/chunks/app/page-4919077fd9cf1cff.js');
+        const response = await fetch('https://play.manybahtpage.com/_next/static/chunks/app/page-482f7ba09d6a61cb.js');
         const text = await response.text();
         
         const foundMod = (text.match(/\d{10,}/g) || []).reduce((a, b) => 
