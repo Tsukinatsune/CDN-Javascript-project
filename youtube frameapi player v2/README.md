@@ -21,3 +21,4 @@
 
 ## Demo control from parent
 [Dashboard](https://gupiton.dwqdwqd.serv00.net/plain/rbx.php?id=v2ytframe-4)
+[Full featured used on Inloretube](https://inloretube.web.app/watch/?v=jJOjLOeOhFU)
