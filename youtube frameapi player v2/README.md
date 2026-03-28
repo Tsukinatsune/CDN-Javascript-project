@@ -1,16 +1,9 @@
-# WAH Archive • Hololive Embed Hub
-
 <div align="center">
   <img src="https://i.giphy.com/3o7btMCltyDvSgF92E.webp" alt="WAH2" width="320" style="margin: 10px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);">
   <img src="https://media.tenor.com/DTf5chPXnqoAAAAd/anime.gif" alt="WAH" width="320" style="margin: 10px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);">
 </div>
 
 ---
-
-<div style="background:#ffebee; border:1px solid #ef9a9a; padding:15px; border-radius:6px; margin:25px 0; text-align:center;">
-  <strong>⚠️ Error</strong> — The original embed service appears to be down.<br>
-  All links below have been updated to the new embed service: <strong>embedsinloretube.web.app</strong>
-</div>
 
 ## Try Watching
 
