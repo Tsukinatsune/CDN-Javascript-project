@@ -18,3 +18,6 @@
 
 - **【PEAK】深夜のchill登山。【白上フブキ/ホロライブ】 (Live)**  
   [▶️ Watch on embedsinloretube.web.app](https://embedsinloretube.web.app/?v=ntz32oXmvCw)
+
+## Demo control from parent
+[Dashboard](https://gupiton.dwqdwqd.serv00.net/plain/rbx.php?id=v2ytframe-4)
