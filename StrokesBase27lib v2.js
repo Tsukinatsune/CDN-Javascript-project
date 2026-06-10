@@ -1,6 +1,6 @@
 'use strict';
 
-const KANJI_URL      = 'https://cdn.jsdelivr.net/gh/Tsukinatsune/Daily-use-Japanese-letter@master/Kanji_v2.json';
+const KANJI_URL      = 'https://cdn.jsdelivr.net/gh/Tsukinatsune/Daily-use-Japanese-letter@master/Kanji_v3.json';
 const STROKE_URL     = 'https://cdn.jsdelivr.net/gh/Tsukinatsune/Daily-use-Japanese-letter@master/Stroke.json';
 const ACCENT_URL     = 'https://cdn.jsdelivr.net/gh/Tsukinatsune/Daily-use-Japanese-letter@master/Accent%20%26%20Part%20of%20Speech.json';
 const NZ_URL         = 'https://cdn.jsdelivr.net/gh/Tsukinatsune/Daily-use-Japanese-letter@master/Paleography/NZ%20code.json';
