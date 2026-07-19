@@ -14474,7 +14474,18 @@
 
             function waitForLevelDetails(levelIndex) {
                 return new Promise((function(resolve, reject) {
-                    var timeout, cleanup;
+                    var timeout;
+
+                    function cleanup() {
+                        clearTimeout(timeout);
+                        hls.off(S.MANIFEST_PARSED, onEvent);
+                        hls.off(S.LEVEL_LOADED, onEvent);
+                        hls.off(S.LEVEL_UPDATED, onEvent);
+                    }
+
+                    function onEvent() {
+                        tryResolve();
+                    }
 
                     function tryResolve() {
                         var level = hls.levels && hls.levels[levelIndex];
@@ -14492,17 +14503,6 @@
                         cleanup();
                         reject(new Error("sphls: timed out waiting for level " + levelIndex + " details"));
                     }), options.timeout || 15e3);
-
-                    function onEvent() {
-                        tryResolve();
-                    }
-
-                    cleanup = function() {
-                        clearTimeout(timeout);
-                        hls.off(S.MANIFEST_PARSED, onEvent);
-                        hls.off(S.LEVEL_LOADED, onEvent);
-                        hls.off(S.LEVEL_UPDATED, onEvent);
-                    };
 
                     hls.on(S.MANIFEST_PARSED, onEvent);
                     hls.on(S.LEVEL_LOADED, onEvent);
