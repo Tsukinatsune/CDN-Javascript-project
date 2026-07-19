@@ -14072,11 +14072,26 @@
                         allLevels = !!options.allLevels,
                         onProgress = options.onProgress,
                         maxRetry = void 0 === options.maxRetry ? 2 : options.maxRetry,
+                        startTime = null == options.startTime ? null : Number(options.startTime),
+                        endTime = null == options.endTime ? null : Number(options.endTime),
+                        inRange = function(fragLike) {
+                            if (null == startTime && null == endTime) return !0;
+                            var fStart = null != fragLike.start ? fragLike.start : 0,
+                                fEnd = fStart + (fragLike.duration || 0);
+                            return (null == startTime || fEnd > startTime) && (null == endTime || fStart < endTime)
+                        },
                         collectSegmentsFromTracks = function(tracks) {
                             var segments = [];
                             return tracks && tracks.forEach((function(track) {
                                 var details = track && track.details;
-                                details && details.fragments && (segments = segments.concat(details.fragments)), details && details.fragmentHint && segments.push(details.fragmentHint), details && details.initSegment && segments.push(details.initSegment), details && details.partList && (segments = segments.concat(details.partList))
+                                if (details) {
+                                    var frags = details.fragments || [];
+                                    (null != startTime || null != endTime) && (frags = frags.filter(inRange)), segments = segments.concat(frags);
+                                    var parts = details.partList || [];
+                                    (null != startTime || null != endTime) && (parts = parts.filter(inRange)), segments = segments.concat(parts);
+                                    details.fragmentHint && (null == startTime && null == endTime || inRange(details.fragmentHint)) && segments.push(details.fragmentHint);
+                                    details.initSegment && (null == startTime && null == endTime) && segments.push(details.initSegment)
+                                }
                             })), segments
                         },
                         buildSegmentQueue = function() {
@@ -14087,7 +14102,9 @@
                             return queue.filter((function(segment) {
                                 if (!segment || !segment.url) return !1;
                                 var key = hlsSegCacheKey(segment);
-                                return !seen[key] && (seen[key] = !0)
+                                if (seen[key]) return !1;
+                                seen[key] = !0;
+                                return !hlsSegCache.has(key)
                             }))
                         },
                         runQueue = function(queue) {
@@ -14159,7 +14176,10 @@
                                 includeSubtitles: includeSubtitles,
                                 allLevels: allLevels,
                                 onProgress: onProgress,
-                                maxRetry: maxRetry
+                                maxRetry: maxRetry,
+                                startTime: startTime,
+                                endTime: endTime,
+                                onError: options.onError
                             }).then(resolve)
                         }))
                     }))
@@ -14460,144 +14480,6 @@
                     }
                 }]), t
             }();
-
-        oo.prototype.sphls = function(options) {
-            options = options || {};
-            var hls = this;
-
-            function getLevelIndex() {
-                if (typeof options.level === "number") return options.level;
-                if (hls.currentLevel >= 0) return hls.currentLevel;
-                if (hls.loadLevel >= 0) return hls.loadLevel;
-                return hls.firstLevel || 0;
-            }
-
-            function waitForLevelDetails(levelIndex) {
-                return new Promise((function(resolve, reject) {
-                    var timeout;
-
-                    function cleanup() {
-                        clearTimeout(timeout);
-                        hls.off(S.MANIFEST_PARSED, onEvent);
-                        hls.off(S.LEVEL_LOADED, onEvent);
-                        hls.off(S.LEVEL_UPDATED, onEvent);
-                    }
-
-                    function onEvent() {
-                        tryResolve();
-                    }
-
-                    function tryResolve() {
-                        var level = hls.levels && hls.levels[levelIndex];
-                        if (level && level.details && level.details.fragments && level.details.fragments.length) {
-                            cleanup();
-                            resolve(level.details);
-                            return !0;
-                        }
-                        return !1;
-                    }
-
-                    if (tryResolve()) return;
-
-                    timeout = setTimeout((function() {
-                        cleanup();
-                        reject(new Error("sphls: timed out waiting for level " + levelIndex + " details"));
-                    }), options.timeout || 15e3);
-
-                    hls.on(S.MANIFEST_PARSED, onEvent);
-                    hls.on(S.LEVEL_LOADED, onEvent);
-                    hls.on(S.LEVEL_UPDATED, onEvent);
-
-                    if (hls.levels && hls.levels.length) {
-                        try {
-                            hls.loadLevel = levelIndex;
-                        } catch (e) {}
-                    }
-                }));
-            }
-
-            function selectFragments(details) {
-                var frags = details.fragments.filter((function(f) {
-                    return f && f.url && f.sn !== "initSegment";
-                }));
-                if (typeof options.startIndex === "number" || typeof options.endIndex === "number") {
-                    var startIdx = typeof options.startIndex === "number" ? options.startIndex : 0;
-                    var endIdx = typeof options.endIndex === "number" ? options.endIndex : frags.length - 1;
-                    return frags.filter((function(f) {
-                        return f.sn >= startIdx && f.sn <= endIdx;
-                    }));
-                }
-                if (typeof options.startTime === "number" || typeof options.endTime === "number") {
-                    var startT = typeof options.startTime === "number" ? options.startTime : 0;
-                    var endT = typeof options.endTime === "number" ? options.endTime : 1 / 0;
-                    return frags.filter((function(f) {
-                        var fEnd = f.start + f.duration;
-                        return fEnd > startT && f.start < endT;
-                    }));
-                }
-                return frags;
-            }
-
-            function fetchFragment(frag) {
-                var headers = {},
-                    range = frag.byteRange;
-                range && 2 === range.length && (headers.Range = "bytes=" + range[0] + "-" + (range[1] - 1));
-                var init = {
-                    headers: headers,
-                    credentials: "same-origin",
-                    cache: "force-cache"
-                };
-                options.signal && (init.signal = options.signal);
-                return fetch(frag.url, init).then((function(res) {
-                    return res.arrayBuffer().then((function(buf) {
-                        return {
-                            sn: frag.sn,
-                            url: frag.url,
-                            ok: res.ok,
-                            status: res.status,
-                            byteLength: buf.byteLength
-                        };
-                    }));
-                })).catch((function(err) {
-                    return {
-                        sn: frag.sn,
-                        url: frag.url,
-                        ok: !1,
-                        error: err && err.message ? err.message : String(err)
-                    };
-                }));
-            }
-
-            var levelIndex = getLevelIndex();
-            return waitForLevelDetails(levelIndex).then((function(details) {
-                var targets = selectFragments(details),
-                    total = targets.length,
-                    loaded = 0,
-                    concurrency = options.concurrency && options.concurrency > 0 ? options.concurrency : 3,
-                    results = [],
-                    queue = targets.slice();
-
-                function next() {
-                    if (!queue.length) return Promise.resolve();
-                    var frag = queue.shift();
-                    return fetchFragment(frag).then((function(result) {
-                        results.push(result), loaded++;
-                        "function" == typeof options.onProgress && options.onProgress(loaded, total, result);
-                        return next();
-                    }));
-                }
-                var workers = [];
-                for (var i = 0; i < Math.min(concurrency, targets.length); i++) workers.push(next());
-                return Promise.all(workers).then((function() {
-                    return {
-                        level: levelIndex,
-                        total: total,
-                        results: results
-                    };
-                }));
-            }));
-        };
-
         return oo.defaultConfig = void 0, oo
     }, "object" == typeof exports && "undefined" != typeof module ? module.exports = i() : "function" == typeof define && define.amd ? define(i) : (r = "undefined" != typeof globalThis ? globalThis : r || self).Hls = i()
 }(!1);
