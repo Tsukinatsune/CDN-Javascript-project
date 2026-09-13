@@ -71,14 +71,21 @@ const BrowserPrint = (() => {
     };
   }
 
+  function spoofPlatform(raw) {
+    if (raw === 'iPhone' || raw === 'iPad') return 'MacIntel';
+    return raw;
+  }
+
   function collectSystem() {
+    const rawPlatform = navigator.platform || null;
+    const isIOS = rawPlatform === 'iPhone' || rawPlatform === 'iPad';
     return {
       cores: navigator.hardwareConcurrency || null,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
       language: navigator.language || null,
       languages: navigator.languages ? navigator.languages.join(',') : (navigator.language || null),
-      platform: navigator.platform || null,
-      maxTouchPoints: navigator.maxTouchPoints || 0,
+      platform: isIOS ? 'MacIntel' : (rawPlatform || null),
+      maxTouchPoints: isIOS ? 0 : (navigator.maxTouchPoints || 0),
     };
   }
 
@@ -101,7 +108,7 @@ const BrowserPrint = (() => {
     const data = {};
     if (inc('canvas'))    data.canvas  = await collectCanvas();
     if (inc('webgl'))     data.webgl   = collectWebGL();
-    if (inc('screen')) data.screen = collectScreen();
+    if (inc('screen'))    data.screen  = collectScreen();
     if (inc('cpu') || inc('timezone') || inc('platform') || inc('touch')
         || inc('languages'))
                           data.system  = collectSystem();
