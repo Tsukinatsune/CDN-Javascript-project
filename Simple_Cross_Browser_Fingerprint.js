@@ -5,14 +5,13 @@ const BrowserPrint = (() => {
     { key: 'webgl',        label: 'WebGL parameters',   bits: 6, stable: true },
     { key: 'screen',       label: 'Screen resolution',  bits: 5, stable: true },
     { key: 'timezone',     label: 'Timezone',           bits: 4, stable: true },
-    { key: 'platform',     label: 'Platform',           bits: 3, stable: true },
     { key: 'touch',        label: 'Touch support',      bits: 1, stable: true },
     { key: 'cookies',      label: 'Cookies enabled',    bits: 1, stable: true },
     { key: 'localStorage', label: 'localStorage',       bits: 1, stable: true },
   ];
 
   const VISIBLE_KEYS = [
-    'webgl', 'screen', 'timezone', 'platform', 'touch', 'cookies', 'localStorage',
+    'webgl', 'screen', 'timezone', 'touch', 'cookies', 'localStorage',
   ];
 
   async function sha256Hex(str) {
@@ -71,21 +70,13 @@ const BrowserPrint = (() => {
     };
   }
 
-  function spoofPlatform(raw) {
-    if (raw === 'iPhone' || raw === 'iPad') return 'MacIntel';
-    return raw;
-  }
-
   function collectSystem() {
-    const rawPlatform = navigator.platform || null;
-    const isIOS = rawPlatform === 'iPhone' || rawPlatform === 'iPad';
     return {
       cores: navigator.hardwareConcurrency || null,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
       language: navigator.language || null,
       languages: navigator.languages ? navigator.languages.join(',') : (navigator.language || null),
-      platform: isIOS ? 'MacIntel' : (rawPlatform || null),
-      maxTouchPoints: isIOS ? 0 : (navigator.maxTouchPoints || 0),
+      maxTouchPoints: navigator.maxTouchPoints || 0,
     };
   }
 
@@ -109,8 +100,7 @@ const BrowserPrint = (() => {
     if (inc('canvas'))    data.canvas  = await collectCanvas();
     if (inc('webgl'))     data.webgl   = collectWebGL();
     if (inc('screen'))    data.screen  = collectScreen();
-    if (inc('cpu') || inc('timezone') || inc('platform') || inc('touch')
-        || inc('languages'))
+    if (inc('cpu') || inc('timezone') || inc('touch') || inc('languages'))
                           data.system  = collectSystem();
     if (inc('plugins') || inc('cookies') || inc('localStorage'))
                           data.browser = collectBrowser();
@@ -135,7 +125,6 @@ const BrowserPrint = (() => {
     if (data.system) {
       if (inc('cpu'))       parts.push('cpu:'   + data.system.cores);
       if (inc('timezone'))  parts.push('tz:'    + data.system.timezone);
-      if (inc('platform'))  parts.push('plat:'  + data.system.platform);
       if (inc('touch'))     parts.push('touch:' + data.system.maxTouchPoints);
       if (inc('languages')) parts.push('lang:'  + data.system.languages);
     }
@@ -175,7 +164,6 @@ const BrowserPrint = (() => {
     if (data.system) {
       if (inc('cpu'))       out.cpu = data.system.cores;
       if (inc('timezone'))  out.timezone = data.system.timezone;
-      if (inc('platform'))  out.platform = data.system.platform;
       if (inc('touch'))     out.touch = data.system.maxTouchPoints;
       if (inc('languages')) out.languages = data.system.languages;
     }
