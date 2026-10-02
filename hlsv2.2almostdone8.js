@@ -42568,9 +42568,14 @@
 //
 // Flow:
 //   1. hls.wsphls() downloads all segments into __hlsSegmentCache in background
-//   2. Once ALL segments are cached, installs CacheFirstLoader as config.fLoader
-//   3. From that point hls.js never makes a network request for fragments —
-//      every load() call is served instantly from RAM → instant seeking
+//      while video plays normally.
+//   2. Once ALL segments are cached:
+//      a. CacheFirstLoader installed as config.fLoader — hls.js never hits
+//         the network for fragments again.
+//      b. config.maxBufferLength and config.maxMaxBufferLength set to Infinity
+//         so hls.js eagerly appends the entire video into the SourceBuffer.
+//         This eliminates the loading spinner on seek: the browser never enters
+//         a "waiting" state because the seek target is already appended.
 //
 // Usage:
 //   hls.wsphls({ concurrency: 6, onProgress: fn }) → Promise
@@ -42594,21 +42599,27 @@
     return (e ? e.url : t.url) + "|" + (null != n ? n : r) + "-" + (null != a ? a : i);
   };
 
-  // ── CacheFirstLoader ────────────────────────────────────────────────────
+  // ── CacheFirstLoader ─────────────────────────────────────────────────────
   // Installed as config.fLoader after wsphls() completes.
-  // Serves every fragment/part request from __hlsSegmentCache (zero network).
+  // Serves every fragment request from __hlsSegmentCache with zero network RTT.
   // Falls back to the real network loader only on a cache miss.
-  //
-  // Mirrors the hls2_2.js FragmentLoader (ai) cache-hit path exactly:
-  //   frag.stats = new LoadStats(); stats.loaded = stats.total = byteLength;
-  //   resolve({ frag, part:null, payload: cached.payload.slice(0), networkDetails:null })
 
   function makeCacheFirstLoader(DefaultLoader) {
     function CacheFirstLoader(config) {
-      this.config  = config;
-      this.loader  = null;
-      this._inner  = null; // fallback loader instance
+      this.config = config;
+      this._inner = null;
+      this._stats = {
+        aborted: false, loaded: 0, total: 0, retry: 0,
+        chunkCount: 0, bwEstimate: 0,
+        loading:   { start: 0, first: 0, end: 0 },
+        parsing:   { start: 0, end: 0 },
+        buffering: { start: 0, first: 0, end: 0 }
+      };
     }
+
+    Object.defineProperty(CacheFirstLoader.prototype, 'stats', {
+      get: function() { return this._stats; }
+    });
 
     CacheFirstLoader.prototype.destroy = function() {
       if (this._inner) { this._inner.destroy(); this._inner = null; }
@@ -42618,69 +42629,43 @@
       if (this._inner) this._inner.abort();
     };
 
-    // Called by hls.js FragmentLoader.load() for full fragments
     CacheFirstLoader.prototype.load = function(context, config, callbacks) {
-      var url      = context.url;
-      var cacheKey = url + "|" + (context.rangeStart != null ? context.rangeStart : "undefined")
-                         + "-" + (context.rangeEnd   != null ? context.rangeEnd   : "undefined");
+      var url = context.url;
 
-      // Try the exact ranged key first, then the bare-URL key (set by wsphls fetchOne)
-      var cached = hlsSegCache.get(cacheKey) || hlsSegCache.get(url + "|undefined-undefined");
+      // Find cached entry: try all keys that start with this url
+      var cached = null;
+      hlsSegCache.forEach(function(v, k) {
+        if (!cached && k.indexOf(url + "|") === 0 && v && v.payload) cached = v;
+      });
 
-      // Also try iterating for a prefix match on url (handles any key format)
-      if (!cached) {
-        hlsSegCache.forEach(function(v, k) {
-          if (!cached && k.indexOf(url + "|") === 0) cached = v;
-        });
-      }
-
-      if (cached && cached.payload) {
+      if (cached) {
         var buf  = cached.payload.slice(0); // defensive copy, same as hls2_2.js
         var now  = performance.now();
-        var stats = {
-          aborted: false, loaded: buf.byteLength, total: buf.byteLength,
-          retry: 0, chunkCount: 1, bwEstimate: 0,
-          loading:   { start: now, first: now, end: now },
-          parsing:   { start: 0, end: 0 },
-          buffering: { start: 0, first: 0, end: 0 }
-        };
-        // Restore IV if present (encrypted streams)
+        // Restore IV for encrypted streams (matches hls2_2.js cache-hit path)
         if (cached.iv && context.frag && context.frag.decryptdata) {
           context.frag.decryptdata.iv = cached.iv;
         }
+        // Update our stats object in-place (hls.js holds a reference via frag.stats)
+        this._stats.loaded = this._stats.total = buf.byteLength;
+        this._stats.loading.start = this._stats.loading.first = this._stats.loading.end = now;
+        var stats = this._stats;
         setTimeout(function() {
           callbacks.onSuccess({ url: url, data: buf }, stats, context, null);
         }, 0);
         return;
       }
 
-      // Cache miss — fall back to network loader
-      this._inner = new DefaultLoader(this.config);
-      this._inner.load(context, config, callbacks);
+      // Cache miss — fall through to network loader
+      var inner = this._inner = new DefaultLoader(this.config);
+      // Sync stats reference so hls.js frag.stats stays accurate
+      this._stats = inner.stats;
+      inner.load(context, config, callbacks);
     };
-
-    // stats getter expected by hls.js (frag.stats = loader.stats)
-    Object.defineProperty(CacheFirstLoader.prototype, 'stats', {
-      get: function() {
-        if (!this._stats) {
-          this._stats = {
-            aborted: false, loaded: 0, total: 0, retry: 0,
-            chunkCount: 0, bwEstimate: 0,
-            loading:   { start: 0, first: 0, end: 0 },
-            parsing:   { start: 0, end: 0 },
-            buffering: { start: 0, first: 0, end: 0 }
-          };
-        }
-        return this._stats;
-      }
-    });
 
     return CacheFirstLoader;
   }
 
-  // ── Hls.prototype.wsphls ────────────────────────────────────────────────
-  // Exact copy of hls2_2.js e.wsphls, plus CacheFirstLoader installation
-  // once the full prefetch is complete.
+  // ── Hls.prototype.wsphls ─────────────────────────────────────────────────
 
   Hls.prototype.wsphls = function(options) {
     void 0 === options && (options = {});
@@ -42747,9 +42732,7 @@
                     var fetchOptions = {};
                     var hasRange = null != segment.byteRangeStartOffset && null != segment.byteRangeEndOffset;
                     hasRange && (fetchOptions = {
-                        headers: {
-                            Range: "bytes=" + segment.byteRangeStartOffset + "-" + (segment.byteRangeEndOffset - 1)
-                        }
+                        headers: { Range: "bytes=" + segment.byteRangeStartOffset + "-" + (segment.byteRangeEndOffset - 1) }
                     });
                     return _self.fetch(segment.url, fetchOptions).then(function(response) {
                         if (!response.ok) throw new Error("HTTP " + response.status + " loading " + segment.url);
@@ -42810,13 +42793,23 @@
             });
           });
 
-    // ── After all segments are cached, install CacheFirstLoader ───────────
-    // hls.js will now serve every fragment from RAM — no more network fetches.
     return prefetchPromise.then(function(result) {
+
+        // ── 1. Install CacheFirstLoader so hls.js never fetches from network ──
         if (!hlsInstance.config.fLoader) {
             var DefaultLoader = hlsInstance.config.loader;
             hlsInstance.config.fLoader = makeCacheFirstLoader(DefaultLoader);
         }
+
+        // ── 2. Maximize buffer length so hls.js appends the entire video ─────
+        // With the whole file appended into the SourceBuffer, seeks land on
+        // already-decoded data → the browser never fires "waiting" → no spinner.
+        hlsInstance.config.maxBufferLength    = 86400; // 24h effectively Infinity
+        hlsInstance.config.maxMaxBufferLength = 86400;
+        hlsInstance.config.backBufferLength   = 86400; // never trim behind playhead
+        // Kick hls.js to start filling the buffer immediately with the new limit
+        hlsInstance.startLoad(hlsInstance.media ? hlsInstance.media.currentTime : -1);
+
         return result;
     });
   };
