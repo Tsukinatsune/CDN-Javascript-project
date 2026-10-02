@@ -42563,340 +42563,160 @@
 })(false);
 //# sourceMappingURL=hls.js.map
 // =============================================================================
-// WSP-HLS — Whole Segment Preload
-// Tsukinatsune — ported from hls2_2.js (hls.js v1.5.13 modified build)
-//
-// Segment loading behaviour is identical to hls2_2.js:
-//   • Shared global cache  : self.__hlsSegmentCache  (Map)
-//   • Cache key format     : url + "|" + byteRangeStart + "-" + byteRangeEnd
-//   • Cache entry format   : { payload: ArrayBuffer, iv?: Uint8Array }
-//   • Byte-range support   : sends Range header when fragment has byte offsets
-//   • Retry logic          : per-segment, configurable maxRetry (default 2)
-//   • Track scope          : video level + optional audio + optional subtitles
-//   • Queue pattern        : N concurrent sliding-window workers (default 6)
+// WSP-HLS — Whole Segment Preload (Tsukinatsune)
+// Patched onto Hls.prototype — identical to hls2_2.js wsphls() function.
+// Usage: hls.wsphls({ concurrency: 6, onProgress: fn }) → Promise
 // =============================================================================
 
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define([], factory);
-  } else if (typeof module !== 'undefined' && module.exports) {
-    module.exports = factory();
-  } else {
-    root.WspHls = factory();
-  }
-}(typeof self !== 'undefined' ? self : this, function () {
+(function() {
+  var _self = typeof self !== 'undefined' ? self
+            : typeof globalThis !== 'undefined' ? globalThis
+            : window;
 
   // Shared segment cache — same Map used by hls2_2.js's internal loader.
-  // Keyed as: url + "|" + byteRangeStart + "-" + byteRangeEnd
-  // Value   : { payload: ArrayBuffer, iv?: Uint8Array }
-  var _self = typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : window);
   var hlsSegCache = _self.__hlsSegmentCache || (_self.__hlsSegmentCache = new Map());
 
   // Identical key function to hls2_2.js hlsSegCacheKey(frag, part?)
-  function hlsSegCacheKey(frag, part) {
-    var r = frag.byteRangeStartOffset;
-    var i = frag.byteRangeEndOffset;
-    var n = part ? part.byteRangeStartOffset : undefined;
-    var a = part ? part.byteRangeEndOffset   : undefined;
-    var url = part ? part.url : frag.url;
-    return url + '|' + (n != null ? n : r) + '-' + (a != null ? a : i);
-  }
-
-  // ── WspHls constructor ───────────────────────────────────────────────────
-
-  /**
-   * WspHls — Whole Segment Preload HLS wrapper.
-   *
-   * Mirrors the hls2_2.js  hls.wsphls()  method but as a standalone class
-   * that wraps a full hls.js instance. Segment loading (fetch strategy, cache
-   * format, byte-range handling, retry, concurrency) is identical to hls2_2.js.
-   *
-   * @param {object} options
-   *   concurrency       {number}   Parallel fetch workers.            Default: 6
-   *   includeAudio      {boolean}  Prefetch audio track segments.     Default: true
-   *   includeSubtitles  {boolean}  Prefetch subtitle track segments.  Default: true
-   *   allLevels         {boolean}  Prefetch every quality level.      Default: false
-   *   maxRetry          {number}   Per-segment fetch retries.         Default: 2
-   *   startTime         {number}   Prefetch window start (seconds).   Default: null (all)
-   *   endTime           {number}   Prefetch window end   (seconds).   Default: null (all)
-   *   onProgress        {function({prefetched, total, failed})}
-   *   onError           {function(segment, error)}
-   *   hlsConfig         {object}   Extra options merged into hls.js config.
-   */
-  function WspHls(options) {
-    options = options || {};
-    this.concurrency      = parseInt(options.concurrency, 10) || 6;
-    this.includeAudio     = options.includeAudio     !== false;
-    this.includeSubtitles = options.includeSubtitles !== false;
-    this.allLevels        = !!options.allLevels;
-    this.maxRetry         = options.maxRetry != null ? options.maxRetry : 2;
-    this.startTime        = options.startTime != null ? Number(options.startTime) : null;
-    this.endTime          = options.endTime   != null ? Number(options.endTime)   : null;
-    this.onProgress       = options.onProgress || null;
-    this.onError          = options.onError    || null;
-    this.extraHlsConfig   = options.hlsConfig  || {};
-
-    this.hls   = null;
-    this.video = null;
-
-    if (typeof Hls === 'undefined') {
-      throw new Error('[WSP-HLS] hls.js must be loaded before WspHls.');
-    }
-  }
-
-  // ── Public API ───────────────────────────────────────────────────────────
-
-  WspHls.prototype.attachMedia = function (video) {
-    this.video = video;
+  var hlsSegCacheKey = function(t, e) {
+    var r = t.byteRangeStartOffset,
+        i = t.byteRangeEndOffset,
+        n = e ? e.byteRangeStartOffset : void 0,
+        a = e ? e.byteRangeEndOffset : void 0;
+    return (e ? e.url : t.url) + "|" + (null != n ? n : r) + "-" + (null != a ? a : i);
   };
 
-  /**
-   * Load the manifest, create hls.js, then run wsphls() prefetch.
-   * @param {string} url  HLS manifest URL
-   */
-  WspHls.prototype.loadSource = function (url) {
-    var self = this;
-
-    var hlsConfig = Object.assign(
-      {
-        maxBufferLength: 120,
-        maxBufferSize:   300 * 1024 * 1024,
-        lowLatencyMode:  false
-      },
-      self.extraHlsConfig
-    );
-
-    self.hls = new Hls(hlsConfig);
-    self.hls.loadSource(url);
-    self.hls.attachMedia(self.video);
-
-    self.hls.on(Hls.Events.MANIFEST_PARSED, function () {
-      self.video.play().catch(function (e) {
-        console.info('[WSP-HLS] Autoplay blocked:', e.message);
-      });
-      // Begin prefetch immediately after manifest is ready
-      self._runWsphls();
-    });
-
-    self.hls.on(Hls.Events.ERROR, function (event, data) {
-      if (data.fatal) {
-        console.error('[WSP-HLS] Fatal error:', data.type, data.details);
-        switch (data.type) {
-          case Hls.ErrorTypes.NETWORK_ERROR:
-            self.hls.startLoad(); break;
-          case Hls.ErrorTypes.MEDIA_ERROR:
-            self.hls.recoverMediaError(); break;
-          default:
-            self.destroy(); break;
-        }
-      }
-    });
-  };
-
-  WspHls.prototype.destroy = function () {
-    if (this.hls) { this.hls.destroy(); this.hls = null; }
-  };
-
-  // ── Prefetch — mirrors hls2_2.js wsphls() exactly ───────────────────────
-
-  /**
-   * Run the prefetch pass. Identical logic to hls2_2.js e.wsphls().
-   * If level details aren't ready yet, waits for LEVEL_LOADED then retries.
-   * @returns {Promise<{prefetched, total, failed[]}>}
-   */
-  WspHls.prototype._runWsphls = function () {
-    var self = this;
-    var hlsInstance = self.hls;
-    var queue = self._buildSegmentQueue();
-
-    if (queue.length) {
-      return self._runQueue(queue);
-    }
-
-    // Level details not parsed yet — wait for LEVEL_LOADED then retry
-    return new Promise(function (resolve) {
-      hlsInstance.once(Hls.Events.LEVEL_LOADED, function () {
-        self._runWsphls().then(resolve);
-      });
-    });
-  };
-
-  /**
-   * Check if a fragment/part falls within the requested time window.
-   * Mirrors hls2_2.js inRange().
-   */
-  WspHls.prototype._inRange = function (fragLike) {
-    if (this.startTime == null && this.endTime == null) return true;
-    var fStart = fragLike.start != null ? fragLike.start : 0;
-    var fEnd   = fStart + (fragLike.duration || 0);
-    return (this.startTime == null || fEnd   > this.startTime) &&
-           (this.endTime   == null || fStart < this.endTime);
-  };
-
-  /**
-   * Collect fragment objects from an array of track-like objects.
-   * Mirrors hls2_2.js collectSegmentsFromTracks().
-   */
-  WspHls.prototype._collectSegmentsFromTracks = function (tracks) {
-    var self = this;
-    var segments = [];
-    if (!tracks) return segments;
-    tracks.forEach(function (track) {
-      var details = track && track.details;
-      if (!details) return;
-      var frags = details.fragments || [];
-      if (self.startTime != null || self.endTime != null) {
-        frags = frags.filter(function (f) { return self._inRange(f); });
-      }
-      segments = segments.concat(frags);
-
-      var parts = details.partList || [];
-      if (self.startTime != null || self.endTime != null) {
-        parts = parts.filter(function (p) { return self._inRange(p); });
-      }
-      segments = segments.concat(parts);
-
-      if (details.fragmentHint &&
-          (self.startTime == null && self.endTime == null || self._inRange(details.fragmentHint))) {
-        segments.push(details.fragmentHint);
-      }
-      if (details.initSegment &&
-          self.startTime == null && self.endTime == null) {
-        segments.push(details.initSegment);
-      }
-    });
-    return segments;
-  };
-
-  /**
-   * Build the ordered list of unique, not-yet-cached segments to fetch.
-   * Mirrors hls2_2.js buildSegmentQueue().
-   */
-  WspHls.prototype._buildSegmentQueue = function () {
-    var self        = this;
-    var hlsInstance = self.hls;
-    var levels      = hlsInstance.levels || [];
-    var queue       = [];
-
-    var videoLevels = self.allLevels
-      ? levels
-      : [levels[hlsInstance.currentLevel] || levels[0]];
-    queue = queue.concat(self._collectSegmentsFromTracks(videoLevels));
-
-    if (self.includeAudio && hlsInstance.audioTracks) {
-      queue = queue.concat(self._collectSegmentsFromTracks(hlsInstance.audioTracks));
-    }
-    if (self.includeSubtitles && hlsInstance.subtitleTracks) {
-      queue = queue.concat(self._collectSegmentsFromTracks(hlsInstance.subtitleTracks));
-    }
-
-    // Deduplicate and skip already-cached entries
-    var seen = {};
-    return queue.filter(function (segment) {
-      if (!segment || !segment.url) return false;
-      var key = hlsSegCacheKey(segment);
-      if (seen[key]) return false;
-      seen[key] = true;
-      return !hlsSegCache.has(key);
-    });
-  };
-
-  /**
-   * Fetch one segment with byte-range support and retry.
-   * Mirrors hls2_2.js fetchOne().
-   *
-   * Cache entry format: { payload: ArrayBuffer }
-   * (iv is populated by hls.js's own loader on decryption; wsphls stores
-   *  only raw bytes here, matching hls2_2.js wsphls() behaviour.)
-   */
-  WspHls.prototype._fetchOne = function (segment, attemptsLeft) {
-    var self        = this;
-    var fetchOptions = {};
-    var hasRange     = segment.byteRangeStartOffset != null &&
-                       segment.byteRangeEndOffset   != null;
-
-    if (hasRange) {
-      fetchOptions = {
-        headers: {
-          Range: 'bytes=' + segment.byteRangeStartOffset + '-' +
-                 (segment.byteRangeEndOffset - 1)
-        }
-      };
-    }
-
-    return _self.fetch(segment.url, fetchOptions)
-      .then(function (response) {
-        if (!response.ok) throw new Error('HTTP ' + response.status + ' loading ' + segment.url);
-        return response.arrayBuffer();
-      })
-      .then(function (buffer) {
-        // Trim to exact byte range if server ignored the Range header
-        if (hasRange && buffer.byteLength !== (segment.byteRangeEndOffset - segment.byteRangeStartOffset)) {
-          buffer = buffer.slice(segment.byteRangeStartOffset, segment.byteRangeEndOffset);
-        }
-        return buffer;
-      })
-      .catch(function (err) {
-        if (attemptsLeft > 0) return self._fetchOne(segment, attemptsLeft - 1);
-        throw err;
-      });
-  };
-
-  /**
-   * Run the sliding-window worker queue.
-   * Mirrors hls2_2.js runQueue() — N workers each pulling the next segment
-   * until the queue is exhausted.
-   */
-  WspHls.prototype._runQueue = function (queue) {
-    var self           = this;
-    var nextIndex      = 0;
-    var total          = queue.length;
-    var prefetchedCount = 0;
-    var failed         = [];
-    var onProgress     = self.onProgress;
-
-    function worker() {
-      if (nextIndex >= queue.length) return Promise.resolve();
-      var segment = queue[nextIndex++];
-      var key     = hlsSegCacheKey(segment);
-
-      // Already in cache (populated by a parallel worker or hls.js itself)
-      if (hlsSegCache.has(key)) {
-        prefetchedCount++;
-        if (typeof onProgress === 'function') {
-          onProgress({ prefetched: prefetchedCount, total: total, failed: failed.length });
-        }
-        return worker();
-      }
-
-      return self._fetchOne(segment, self.maxRetry)
-        .then(function (buffer) {
-          hlsSegCache.set(key, { payload: buffer });
-          prefetchedCount++;
-        })
-        .catch(function (err) {
-          failed.push({ url: segment.url, error: err && err.message });
-          if (typeof self.onError === 'function') self.onError(segment, err);
-        })
-        .then(function () {
-          if (typeof onProgress === 'function') {
-            onProgress({ prefetched: prefetchedCount, total: total, failed: failed.length });
-          }
-          return worker();
+  // Patch wsphls onto Hls.prototype — exact copy of hls2_2.js e.wsphls
+  Hls.prototype.wsphls = function(options) {
+    void 0 === options && (options = {});
+    var hlsInstance = this,
+        concurrency = void 0 === options.concurrency ? (this.config.prefetchConcurrency || 6) : options.concurrency;
+    concurrency = parseInt(concurrency, 10), (!concurrency || concurrency < 1) && (concurrency = 6);
+    var includeAudio = void 0 === options.includeAudio ? this.config.prefetchIncludeAudio : options.includeAudio,
+        includeSubtitles = void 0 === options.includeSubtitles ? this.config.prefetchIncludeSubtitles : options.includeSubtitles,
+        allLevels = !!options.allLevels,
+        onProgress = options.onProgress,
+        maxRetry = void 0 === options.maxRetry ? 2 : options.maxRetry,
+        startTime = null == options.startTime ? null : Number(options.startTime),
+        endTime = null == options.endTime ? null : Number(options.endTime),
+        inRange = function(fragLike) {
+            if (null == startTime && null == endTime) return true;
+            var fStart = null != fragLike.start ? fragLike.start : 0,
+                fEnd = fStart + (fragLike.duration || 0);
+            return (null == startTime || fEnd > startTime) && (null == endTime || fStart < endTime);
+        },
+        collectSegmentsFromTracks = function(tracks) {
+            var segments = [];
+            return tracks && tracks.forEach(function(track) {
+                var details = track && track.details;
+                if (details) {
+                    var frags = details.fragments || [];
+                    (null != startTime || null != endTime) && (frags = frags.filter(inRange));
+                    segments = segments.concat(frags);
+                    var parts = details.partList || [];
+                    (null != startTime || null != endTime) && (parts = parts.filter(inRange));
+                    segments = segments.concat(parts);
+                    details.fragmentHint && (null == startTime && null == endTime || inRange(details.fragmentHint)) && segments.push(details.fragmentHint);
+                    details.initSegment && (null == startTime && null == endTime) && segments.push(details.initSegment);
+                }
+            }), segments;
+        },
+        buildSegmentQueue = function() {
+            var queue = [],
+                levels = hlsInstance.levels || [];
+            queue = queue.concat(collectSegmentsFromTracks(allLevels ? levels : [levels[hlsInstance.currentLevel] || levels[0]]));
+            includeAudio && hlsInstance.audioTracks && (queue = queue.concat(collectSegmentsFromTracks(hlsInstance.audioTracks)));
+            includeSubtitles && hlsInstance.subtitleTracks && (queue = queue.concat(collectSegmentsFromTracks(hlsInstance.subtitleTracks)));
+            var seen = {};
+            return queue.filter(function(segment) {
+                if (!segment || !segment.url) return false;
+                var key = hlsSegCacheKey(segment);
+                if (seen[key]) return false;
+                seen[key] = true;
+                return !hlsSegCache.has(key);
+            });
+        },
+        runQueue = function(queue) {
+            var nextIndex = 0,
+                total = queue.length,
+                prefetchedCount = 0,
+                failed = [],
+                fetchOne = function(segment, attemptsLeft) {
+                    var fetchOptions = {};
+                    var hasRange = null != segment.byteRangeStartOffset && null != segment.byteRangeEndOffset;
+                    return hasRange && (fetchOptions = {
+                        headers: {
+                            Range: "bytes=" + segment.byteRangeStartOffset + "-" + (segment.byteRangeEndOffset - 1)
+                        }
+                    }), _self.fetch(segment.url, fetchOptions).then(function(response) {
+                        if (!response.ok) throw new Error("HTTP " + response.status + " loading " + segment.url);
+                        return response.arrayBuffer();
+                    }).then(function(buffer) {
+                        var expectedLength = hasRange ? segment.byteRangeEndOffset - segment.byteRangeStartOffset : null;
+                        return null != expectedLength && buffer.byteLength !== expectedLength && (buffer = buffer.slice(segment.byteRangeStartOffset, segment.byteRangeEndOffset)), buffer;
+                    }).catch(function(err) {
+                        if (attemptsLeft > 0) return fetchOne(segment, attemptsLeft - 1);
+                        throw err;
+                    });
+                },
+                worker = function() {
+                    if (nextIndex >= queue.length) return Promise.resolve();
+                    var segment = queue[nextIndex++];
+                    if (hlsSegCache.has(hlsSegCacheKey(segment))) {
+                        return prefetchedCount++, typeof onProgress === "function" && onProgress({
+                            prefetched: prefetchedCount,
+                            total: total,
+                            failed: failed.length
+                        }), worker();
+                    }
+                    return fetchOne(segment, maxRetry).then(function(buffer) {
+                        hlsSegCache.set(hlsSegCacheKey(segment), { payload: buffer });
+                        prefetchedCount++;
+                    }).catch(function(err) {
+                        failed.push({ url: segment.url, error: err && err.message });
+                        typeof options.onError === "function" && options.onError(segment, err);
+                    }).then(function() {
+                        typeof onProgress === "function" && onProgress({
+                            prefetched: prefetchedCount,
+                            total: total,
+                            failed: failed.length
+                        });
+                    }).then(worker);
+                },
+                workers = [];
+            for (var w = 0; w < concurrency; w++) workers.push(worker());
+            return Promise.all(workers).then(function() {
+                return { prefetched: prefetchedCount, total: total, failed: failed };
+            });
+        },
+        segmentQueue = buildSegmentQueue();
+    return segmentQueue.length ? runQueue(segmentQueue) : new Promise(function(resolve) {
+        hlsInstance.once(Hls.Events.LEVEL_LOADED, function() {
+            hlsInstance.wsphls({
+                concurrency: concurrency,
+                includeAudio: includeAudio,
+                includeSubtitles: includeSubtitles,
+                allLevels: allLevels,
+                onProgress: onProgress,
+                maxRetry: maxRetry,
+                startTime: startTime,
+                endTime: endTime,
+                onError: options.onError
+            }).then(resolve);
         });
-    }
-
-    var workers = [];
-    for (var w = 0; w < self.concurrency; w++) workers.push(worker());
-
-    return Promise.all(workers).then(function () {
-      return { prefetched: prefetchedCount, total: total, failed: failed };
     });
   };
 
-  return WspHls;
+  // Alias — same as hls2_2.js
+  Hls.prototype.prefetchAllSegments = Hls.prototype.wsphls;
 
-})); // end WspHls UMD wrapper
+  // Help — same as hls2_2.js
+  Hls.prototype.help = function() {
+    var tutorialUrl = "https://wsphls-tutorial.pages.dev/";
+    console.log("wsphls help: see tutorial at " + tutorialUrl);
+    return tutorialUrl;
+  };
+
+}());
 // =============================================================================
-// End WSP-HLS — Whole Segment Preload (Tsukinatsune)
+// End WSP-HLS
 // =============================================================================
