@@ -4226,12 +4226,12 @@
         }
         var ni = Math.pow(2, 17),
             hlsSegCache = self.__hlsSegmentCache || (self.__hlsSegmentCache = new Map()),
-            hlsSegCacheKey = function(t, e, manifestUrl) {
+            hlsSegCacheKey = function(t, e) {
                 var r = t.byteRangeStartOffset,
                     i = t.byteRangeEndOffset,
                     n = e ? e.byteRangeStartOffset : void 0,
                     a = e ? e.byteRangeEndOffset : void 0;
-                return (manifestUrl ? manifestUrl + "@" : "") + (e ? e.url : t.url) + "|" + (null != n ? n : r) + "-" + (null != a ? a : i)
+                return (e ? e.url : t.url) + "|" + (null != n ? n : r) + "-" + (null != a ? a : i)
             },
             ai = function() {
                 function t(t) {
@@ -4257,7 +4257,7 @@
                     var a = this.config,
                         s = a.fLoader,
                         o = a.loader,
-                        cacheKey = hlsSegCacheKey(t, null, this.hls && this.hls.url);
+                        cacheKey = hlsSegCacheKey(t);
                     if (hlsSegCache.has(cacheKey)) {
                         var cached = hlsSegCache.get(cacheKey);
                         return cached.iv && t.decryptdata && (t.decryptdata.iv = cached.iv), t.stats = new M, t.stats.loaded = t.stats.total = cached.payload.byteLength, Promise.resolve({
@@ -4352,7 +4352,7 @@
                     var a = this.config,
                         s = a.fLoader,
                         o = a.loader,
-                        partCacheKey = hlsSegCacheKey(t, e, this.hls && this.hls.url);
+                        partCacheKey = hlsSegCacheKey(t, e);
                     if (hlsSegCache.has(partCacheKey)) {
                         var cachedPart = hlsSegCache.get(partCacheKey);
                         e.stats = new M, e.stats.loaded = e.stats.total = cachedPart.payload.byteLength;
@@ -12502,8 +12502,8 @@
                 maxMaxBufferLength: 3600,
                 prefetchAll: !1,
                 prefetchConcurrency: 6,
-                prefetchIncludeAudio: !0,
-                prefetchIncludeSubtitles: !0,
+                prefetchIncludeAudio: !1,
+                prefetchIncludeSubtitles: !1,
                 enableWorker: !0,
                 workerPath: null,
                 enableSoftwareAES: !0,
@@ -14097,17 +14097,35 @@
                         buildSegmentQueue = function() {
                             var queue = [],
                                 levels = hlsInstance.levels || [];
-                            queue = queue.concat(collectSegmentsFromTracks(allLevels ? levels : [levels[hlsInstance.currentLevel] || levels[0]])), includeAudio && hlsInstance.audioTracks && (queue = queue.concat(collectSegmentsFromTracks(hlsInstance.audioTracks))), includeSubtitles && hlsInstance.subtitleTracks && (queue = queue.concat(collectSegmentsFromTracks(hlsInstance.subtitleTracks)));
+                            queue = queue.concat(collectSegmentsFromTracks(allLevels ? levels : [levels[hlsInstance.currentLevel] || levels[0]]));
+                            /* Audio stutter fix: only prefetch separate audio rendition tracks
+                               when includeAudio is true AND the audio tracks have their own
+                               distinct segment URLs (i.e. not muxed into the video .ts).
+                               Muxed streams share URLs — prefetching them again via audioTracks
+                               races with hls.js's demuxer and causes audio gaps/stutters.     */
+                            if (includeAudio && hlsInstance.audioTracks && hlsInstance.audioTracks.length) {
+                                var videoUrls = {};
+                                queue.forEach(function(s){ if(s&&s.url) videoUrls[s.url]=1; });
+                                var separateAudioTracks = hlsInstance.audioTracks.filter(function(track){
+                                    var details = track && track.details;
+                                    if (!details || !details.fragments || !details.fragments.length) return false;
+                                    /* If the first fragment URL matches a video segment URL it's muxed — skip */
+                                    var firstUrl = details.fragments[0] && details.fragments[0].url;
+                                    return firstUrl && !videoUrls[firstUrl];
+                                });
+                                if (separateAudioTracks.length) queue = queue.concat(collectSegmentsFromTracks(separateAudioTracks));
+                            }
+                            if (includeSubtitles && hlsInstance.subtitleTracks) queue = queue.concat(collectSegmentsFromTracks(hlsInstance.subtitleTracks));
                             var seen = {};
                             return queue.filter((function(segment) {
                                 if (!segment || !segment.url) return !1;
-                                var key = hlsSegCacheKey(segment, null, manifestUrl);
+                                var key = hlsSegCacheKey(segment);
                                 if (seen[key]) return !1;
                                 seen[key] = !0;
                                 return !hlsSegCache.has(key)
                             }))
                         },
-                        runQueue = function(queue, manifestUrl) {
+                        runQueue = function(queue) {
                             var nextIndex = 0,
                                 total = queue.length,
                                 prefetchedCount = 0,
@@ -14133,7 +14151,7 @@
                                 worker = function() {
                                     if (nextIndex >= queue.length) return Promise.resolve();
                                     var segment = queue[nextIndex++];
-                                    if (hlsSegCache.has(hlsSegCacheKey(segment, null, manifestUrl))) {
+                                    if (hlsSegCache.has(hlsSegCacheKey(segment))) {
                                         return prefetchedCount++, "function" == typeof onProgress && onProgress({
                                             prefetched: prefetchedCount,
                                             total: total,
@@ -14141,7 +14159,7 @@
                                         }), worker()
                                     }
                                     return fetchOne(segment, maxRetry).then((function(buffer) {
-                                        hlsSegCache.set(hlsSegCacheKey(segment, null, manifestUrl), {
+                                        hlsSegCache.set(hlsSegCacheKey(segment), {
                                             payload: buffer
                                         }), prefetchedCount++
                                     })).catch((function(err) {
@@ -14167,9 +14185,8 @@
                                 }
                             }))
                         },
-                        manifestUrl = hlsInstance.url,
                         segmentQueue = buildSegmentQueue();
-                    return segmentQueue.length ? runQueue(segmentQueue, manifestUrl) : new Promise((function(resolve) {
+                    return segmentQueue.length ? runQueue(segmentQueue) : new Promise((function(resolve) {
                         hlsInstance.once(S.LEVEL_LOADED, (function() {
                             hlsInstance.wsphls({
                                 concurrency: concurrency,
