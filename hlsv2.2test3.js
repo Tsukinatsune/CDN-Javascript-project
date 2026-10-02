@@ -14141,8 +14141,21 @@
                                         if (!response.ok) throw new Error("HTTP " + response.status + " loading " + segment.url);
                                         return response.arrayBuffer()
                                     })).then((function(buffer) {
-                                        var expectedLength = hasRange ? segment.byteRangeEndOffset - segment.byteRangeStartOffset : null;
-                                        return null != expectedLength && buffer.byteLength !== expectedLength && (buffer = buffer.slice(segment.byteRangeStartOffset, segment.byteRangeEndOffset)), buffer
+                                        /* Store as Uint8Array to match hls.js loader cache format.
+                                           hls.js's own loader stores payload as Uint8Array and reads
+                                           it back with .byteLength and .slice(0) (Uint8Array method).
+                                           Storing a raw ArrayBuffer breaks those reads. */
+                                        var uint8 = new Uint8Array(buffer);
+                                        if (hasRange) {
+                                            /* When the server honours the Range header the response
+                                               is already the requested slice (length = end - start).
+                                               Only re-slice if the server returned the full file. */
+                                            var expectedLength = segment.byteRangeEndOffset - segment.byteRangeStartOffset;
+                                            if (uint8.byteLength !== expectedLength) {
+                                                uint8 = uint8.slice(segment.byteRangeStartOffset, segment.byteRangeEndOffset);
+                                            }
+                                        }
+                                        return uint8
                                     })).catch((function(err) {
                                         if (attemptsLeft > 0) return fetchOne(segment, attemptsLeft - 1);
                                         throw err
@@ -14159,8 +14172,12 @@
                                         }), worker()
                                     }
                                     return fetchOne(segment, maxRetry).then((function(buffer) {
+                                        /* buffer is Uint8Array — same type hls.js loader stores.
+                                           iv is undefined: wsphls does not decrypt; hls.js handles
+                                           decryption on playback via its own key-loading path. */
                                         hlsSegCache.set(hlsSegCacheKey(segment), {
-                                            payload: buffer
+                                            payload: buffer,
+                                            iv: void 0
                                         }), prefetchedCount++
                                     })).catch((function(err) {
                                         failed.push({
