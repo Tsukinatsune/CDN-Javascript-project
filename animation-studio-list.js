@@ -12677,7 +12677,7 @@ const Animation_studio_list = [
   },
   {
     "id": 1786,
-    "name": "Muse Communication",
+    "name": "Muse Communication / MUSE",
     "logo": "0ab5b912-5121-4e03-a7c3-a5456e360319",
     "japanese": "ミューズコミュニケーション",
     "established": "09/02/1992",
