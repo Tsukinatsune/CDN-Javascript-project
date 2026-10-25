@@ -43,9 +43,7 @@ function _bgProgressTick() {
 
     if (!document.hidden) {
       $('seekFill').style.width = pct + '%';
-      // Drive per-chapter fills if chapter markers are active
-      { const _ct = $('seekTrack'); if(_ct && _ct._chapProgress) _ct._chapProgress(pct); }
-      // Drive A-B 3-segment fills
+      // Drive unified seek bar (chapters + A-B merged into one set of segments)
       if(window._abUpdateFills) window._abUpdateFills(pct);
       $('timeDisplay').textContent = fmt(cur) + ' / ' + fmt(dur);
     }
@@ -224,87 +222,25 @@ function parseTimestamp(ts){
 }
 
 function buildChapterMarkers(){
+  /* Feed chapter cut points (as % of duration) into the unified bar system.
+     window._barChapPcts holds the internal boundary percentages.
+     window._barBuild() merges them with any A/B points and builds one DOM. */
+  window._barChapPcts = [];
+
+  /* Remove any legacy chapter DOM elements that may exist */
   document.querySelectorAll('.seek-chapter-gap,.seek-chap-seg,.seek-chap-fill').forEach(e=>e.remove());
-  const sf=$('seekFill');
-  if(sf) sf.classList.remove('chap-hidden');
-  const track=$('seekTrack');
-  if(track){
-    track.classList.remove('chap-active');
-    track._chapProgress=null;
-    track._chapHoverBound && track.removeEventListener('mousemove',track._chapHoverBound);
-    track._chapLeaveBound && track.removeEventListener('mouseleave',track._chapLeaveBound);
+
+  if(!chapters.length||!player) {
+    if(window._barBuild) window._barBuild();
+    return;
   }
-  if(!chapters.length||!player||!track||!sf) return;
   let dur=0; try{dur=player.getDuration()||0;}catch(_){}
-  if(!dur) return;
+  if(!dur){ if(window._barBuild) window._barBuild(); return; }
 
-  /* Same symmetric half-gap system as A-B bar */
-  const GAP=4;   /* px total gap between adjacent segments */
-  const H=GAP/2; /* half-gap per side */
+  /* Chapter boundaries: skip first chapter (it starts at 0) */
+  window._barChapPcts = chapters.slice(1).map(c=>c.sec/dur*100).filter(p=>p>0&&p<100);
 
-  const n = chapters.length;
-  /* Build boundary points array: [0, ch1_pct, ch2_pct, …, 100] */
-  const pts = [0, ...chapters.slice(1).map(c=>c.sec/dur*100), 100];
-  /* pts[i] → pts[i+1] is chapter i's range */
-
-  /* Pre-compute geometry for each chapter segment */
-  const geom = chapters.map((c,i)=>{
-    const s=pts[i], e=pts[i+1];
-    const gapL = i>0     ? H : 0;
-    const gapR = i<n-1   ? H : 0;
-    const left  = gapL===0 ? s+'%'          : `calc(${s}% + ${gapL}px)`;
-    const width = `calc(${e-s}% - ${gapL+gapR}px)`;
-    return {left, width, startPct:s, endPct:e};
-  });
-
-  /* Build DOM once */
-  const fillEls=[];
-  geom.forEach((g,i)=>{
-    const seg=document.createElement('div');
-    seg.className='seek-chap-seg';
-    seg.style.cssText=`left:${g.left};width:${g.width}`;
-    seg.dataset.idx=i;
-    track.appendChild(seg);
-
-    const f=document.createElement('div');
-    f.className='seek-chap-fill';
-    f.style.cssText=`left:${g.left};max-width:${g.width};width:0`;
-    track.appendChild(f);
-    fillEls.push({f, s:g.startPct, e:g.endPct, w:g.width});
-  });
-
-  sf.classList.add('chap-hidden');
-  track.classList.add('chap-active');
-
-  /* Hot-path updater — only writes style.width, no DOM changes */
-  track._chapProgress=(pct)=>{
-    for(let i=0;i<fillEls.length;i++){
-      const seg=fillEls[i];
-      let w;
-      if(pct<=seg.s){
-        w='0';
-      } else if(pct>=seg.e){
-        w=seg.w;
-      } else {
-        const ratio=(pct-seg.s)/(seg.e-seg.s);
-        w=`calc(${seg.w} * ${ratio.toFixed(4)})`;
-      }
-      if(seg.f.style.width!==w) seg.f.style.width=w;
-    }
-  };
-
-  /* Hover highlight — read-only, no layout thrash */
-  track._chapHoverBound=(e)=>{
-    const r=track.getBoundingClientRect();
-    const pct=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
-    const idx=getChapterIdxAt(pct*(player?.getDuration()||0));
-    track.querySelectorAll('.seek-chap-seg').forEach((s,si)=>s.classList.toggle('hov',si===idx));
-  };
-  track._chapLeaveBound=()=>{
-    track.querySelectorAll('.seek-chap-seg').forEach(s=>s.classList.remove('hov'));
-  };
-  track.addEventListener('mousemove',track._chapHoverBound);
-  track.addEventListener('mouseleave',track._chapLeaveBound);
+  if(window._barBuild) window._barBuild();
 }
 
 function buildPipChapterMarkers(){
