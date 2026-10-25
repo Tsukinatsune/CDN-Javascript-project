@@ -52,6 +52,15 @@ function _bgProgressTick() {
     }
     checkVideoTimeStop(cur);
     checkChapterChange(cur);
+
+    /* ── A-B Loop ── */
+    if (loopEnabled && window._abA != null && window._abB != null) {
+      const lo = Math.min(window._abA, window._abB);
+      const hi = Math.max(window._abA, window._abB);
+      if (cur < lo - 0.3 || cur >= hi - 0.3) {
+        player.seekTo(lo, true);
+      }
+    }
     try { window.parent.postMessage({event:'timeUpdate',videoId,currentTime:cur,duration:dur,progress:pct},'*'); } catch(_) {}
 
     if (mpActive && !pipWin && !document.hidden) {
