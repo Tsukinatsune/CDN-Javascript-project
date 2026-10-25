@@ -1,4 +1,4 @@
-const $=id=>document.getElementById(id);
+  const $=id=>document.getElementById(id);
 let player=null,videoId=null,isPlaying=false,isMuted=false,currentVol=100;
 let progressTimer=null,hideTimer=null;
 let autoStopTimer=null,autoStopMs=0,autoStopEndOfVideo=false,autoStopStart=0;
