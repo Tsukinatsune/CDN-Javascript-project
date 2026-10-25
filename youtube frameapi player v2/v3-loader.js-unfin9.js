@@ -54,6 +54,7 @@ function _bgProgressTick() {
     }
     checkVideoTimeStop(cur);
     checkChapterChange(cur);
+    if(window._checkSkipZones) window._checkSkipZones(cur);
 
     /* ── A-B Loop ── */
     if (window._abA != null && window._abB != null) {
