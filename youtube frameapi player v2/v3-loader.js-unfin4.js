@@ -45,6 +45,8 @@ function _bgProgressTick() {
       $('seekFill').style.width = pct + '%';
       // Drive per-chapter fills if chapter markers are active
       { const _ct = $('seekTrack'); if(_ct && _ct._chapProgress) _ct._chapProgress(pct); }
+      // Drive A-B 3-segment fills
+      if(window._abUpdateFills) window._abUpdateFills(pct);
       $('timeDisplay').textContent = fmt(cur) + ' / ' + fmt(dur);
     }
     if (autoStopEndOfVideo && !loopEnabled && dur > 0 && cur >= dur - 0.5) {
