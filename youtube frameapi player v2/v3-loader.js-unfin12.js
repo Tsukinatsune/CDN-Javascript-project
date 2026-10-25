@@ -635,10 +635,13 @@ function seekAt(e){
   const pct=Math.max(0,Math.min(1,x/r.width));
   try{
     seekCoverOn();
-    const targetSec=pct*(player.getDuration()||0);
+    let targetSec=pct*(player.getDuration()||0);
+    // Snap past any skip zone the user dragged into
+    if(window._snapSeekPastZones) targetSec=window._snapSeekPastZones(targetSec);
+    const snappedPct=targetSec/(player.getDuration()||1);
     if(!$('seekTrack').classList.contains('bar-active'))
-      $('seekFill').style.width=(pct*100)+'%';
-    else if(window._abUpdateFills) window._abUpdateFills(pct*100);
+      $('seekFill').style.width=(snappedPct*100)+'%';
+    else if(window._abUpdateFills) window._abUpdateFills(snappedPct*100);
     clearTimeout(seekReleaseTimer);
     
     player.seekTo(targetSec,true);
