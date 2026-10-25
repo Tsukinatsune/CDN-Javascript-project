@@ -42,9 +42,11 @@ function _bgProgressTick() {
     const pct = dur > 0 ? (cur / dur) * 100 : 0;
 
     if (!document.hidden) {
-      $('seekFill').style.width = pct + '%';
       // Drive unified seek bar (chapters + A-B merged into one set of segments)
       if(window._abUpdateFills) window._abUpdateFills(pct);
+      // Only update plain seekFill when unified bar is NOT active
+      if(!$('seekTrack').classList.contains('bar-active'))
+        $('seekFill').style.width = pct + '%';
       $('timeDisplay').textContent = fmt(cur) + ' / ' + fmt(dur);
     }
     if (autoStopEndOfVideo && !loopEnabled && dur > 0 && cur >= dur - 0.5) {
@@ -650,10 +652,10 @@ function seekAt(e){
   const pct=Math.max(0,Math.min(1,x/r.width));
   try{
     seekCoverOn();
-    
-    
-    $('seekFill').style.width=(pct*100)+'%';
     const targetSec=pct*(player.getDuration()||0);
+    if(!$('seekTrack').classList.contains('bar-active'))
+      $('seekFill').style.width=(pct*100)+'%';
+    else if(window._abUpdateFills) window._abUpdateFills(pct*100);
     clearTimeout(seekReleaseTimer);
     
     player.seekTo(targetSec,true);
