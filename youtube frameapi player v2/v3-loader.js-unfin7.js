@@ -54,7 +54,7 @@ function _bgProgressTick() {
     checkChapterChange(cur);
 
     /* ── A-B Loop ── */
-    if (loopEnabled && window._abA != null && window._abB != null) {
+    if (window._abA != null && window._abB != null) {
       const lo = Math.min(window._abA, window._abB);
       const hi = Math.max(window._abA, window._abB);
       if (cur < lo - 0.3 || cur >= hi - 0.3) {
@@ -84,6 +84,11 @@ function _bgProgressTick() {
 }
 
 function _handleEndedInBackground(dur) {
+  if (window._abA != null && window._abB != null) {
+    const lo = Math.min(window._abA, window._abB);
+    try { player.seekTo(lo, true); player.playVideo(); } catch(_) {}
+    return;
+  }
   if (loopEnabled) {
     try { player.seekTo(0, true); player.playVideo(); } catch(_) {}
     return;
@@ -535,6 +540,11 @@ function onState(e){
     const fP=player.getIframe?player.getIframe():null;
     if(fP){fP.style.transition='opacity 0.3s ease';fP.style.opacity='0';}
   }else if(e.data===S.ENDED){
+    if(window._abA!=null&&window._abB!=null){
+      const lo=Math.min(window._abA,window._abB);
+      try{player.seekTo(lo,true);player.playVideo();}catch(_){}
+      return;
+    }
     if(loopEnabled){
       try{player.seekTo(0,true);player.playVideo();}catch(_){}
       return;
