@@ -225,77 +225,86 @@ function parseTimestamp(ts){
 
 function buildChapterMarkers(){
   document.querySelectorAll('.seek-chapter-gap,.seek-chap-seg,.seek-chap-fill').forEach(e=>e.remove());
-  $('seekFill').classList.remove('chap-hidden');
-  { const _ct=$('seekTrack'); if(_ct){ _ct._chapProgress=null;
-    _ct._chapHoverBound && _ct.removeEventListener('mousemove',_ct._chapHoverBound);
-    _ct._chapLeaveBound && _ct.removeEventListener('mouseleave',_ct._chapLeaveBound);
-  }}
-  if(!chapters.length||!player) return;
+  const sf=$('seekFill');
+  if(sf) sf.classList.remove('chap-hidden');
+  const track=$('seekTrack');
+  if(track){
+    track.classList.remove('chap-active');
+    track._chapProgress=null;
+    track._chapHoverBound && track.removeEventListener('mousemove',track._chapHoverBound);
+    track._chapLeaveBound && track.removeEventListener('mouseleave',track._chapLeaveBound);
+  }
+  if(!chapters.length||!player||!track||!sf) return;
   let dur=0; try{dur=player.getDuration()||0;}catch(_){}
   if(!dur) return;
-  const track=$('seekTrack');
-  const GAP=3; // px gap between chapter segments
 
-  const pts = chapters.map(c=>c.sec/dur*100);
-  const n   = chapters.length;
+  /* Same symmetric half-gap system as A-B bar */
+  const GAP=4;   /* px total gap between adjacent segments */
+  const H=GAP/2; /* half-gap per side */
 
-  chapters.forEach((c,i)=>{
-    const startPct = pts[i];
-    const endPct   = i+1 < n ? pts[i+1] : 100;
+  const n = chapters.length;
+  /* Build boundary points array: [0, ch1_pct, ch2_pct, …, 100] */
+  const pts = [0, ...chapters.slice(1).map(c=>c.sec/dur*100), 100];
+  /* pts[i] → pts[i+1] is chapter i's range */
 
-    // ── background rail segment (the grey unfilled part of this chapter)
-    const seg = document.createElement('div');
-    seg.className = 'seek-chap-seg';
-    seg.style.cssText = `left:${startPct}%;width:calc(${endPct-startPct}% - ${i+1<n?GAP:0}px)`;
-    seg.dataset.idx = i;
-    track.appendChild(seg);
-
-    // ── filled part of this chapter (mirrors seekFill but per-chapter)
-    const fill = document.createElement('div');
-    fill.className = 'seek-chap-fill';
-    fill.id = 'chapFill'+i;
-    fill.style.cssText = `left:${startPct}%;width:0;max-width:calc(${endPct-startPct}% - ${i+1<n?GAP:0}px)`;
-    track.appendChild(fill);
+  /* Pre-compute geometry for each chapter segment */
+  const geom = chapters.map((c,i)=>{
+    const s=pts[i], e=pts[i+1];
+    const gapL = i>0     ? H : 0;
+    const gapR = i<n-1   ? H : 0;
+    const left  = gapL===0 ? s+'%'          : `calc(${s}% + ${gapL}px)`;
+    const width = `calc(${e-s}% - ${gapL+gapR}px)`;
+    return {left, width, startPct:s, endPct:e};
   });
 
-  // Hide the global seekFill (we draw per-chapter fills instead)
-  $('seekFill').classList.add('chap-hidden');
+  /* Build DOM once */
+  const fillEls=[];
+  geom.forEach((g,i)=>{
+    const seg=document.createElement('div');
+    seg.className='seek-chap-seg';
+    seg.style.cssText=`left:${g.left};width:${g.width}`;
+    seg.dataset.idx=i;
+    track.appendChild(seg);
 
-  // Override the progress tick to drive per-chapter fills
-  track._chapProgress = (pct)=>{
-    for(let i=0;i<n;i++){
-      const startPct = pts[i];
-      const endPct   = i+1 < n ? pts[i+1] : 100;
-      const f = document.getElementById('chapFill'+i);
-      if(!f) continue;
-      if(pct <= startPct){
-        f.style.width='0';
-      } else if(pct >= endPct){
-        f.style.width=`calc(${endPct-startPct}% - ${i+1<n?GAP:0}px)`;
+    const f=document.createElement('div');
+    f.className='seek-chap-fill';
+    f.style.cssText=`left:${g.left};max-width:${g.width};width:0`;
+    track.appendChild(f);
+    fillEls.push({f, s:g.startPct, e:g.endPct, w:g.width});
+  });
+
+  sf.classList.add('chap-hidden');
+  track.classList.add('chap-active');
+
+  /* Hot-path updater — only writes style.width, no DOM changes */
+  track._chapProgress=(pct)=>{
+    for(let i=0;i<fillEls.length;i++){
+      const seg=fillEls[i];
+      let w;
+      if(pct<=seg.s){
+        w='0';
+      } else if(pct>=seg.e){
+        w=seg.w;
       } else {
-        // partial fill within this chapter
-        const segW   = endPct - startPct;
-        const filled = pct - startPct;
-        const ratio  = filled / segW;
-        f.style.width=`calc((${endPct-startPct}% - ${i+1<n?GAP:0}px) * ${ratio.toFixed(4)})`;
+        const ratio=(pct-seg.s)/(seg.e-seg.s);
+        w=`calc(${seg.w} * ${ratio.toFixed(4)})`;
       }
+      if(seg.f.style.width!==w) seg.f.style.width=w;
     }
   };
 
-  // Segment hover highlight
-  track._chapHoverBound && track.removeEventListener('mousemove', track._chapHoverBound);
-  track._chapLeaveBound && track.removeEventListener('mouseleave', track._chapLeaveBound);
-  track._chapHoverBound = (e)=>{
-    const r = track.getBoundingClientRect();
-    const pct = Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
-    const idx = getChapterIdxAt(pct*(player?.getDuration()||0));
+  /* Hover highlight — read-only, no layout thrash */
+  track._chapHoverBound=(e)=>{
+    const r=track.getBoundingClientRect();
+    const pct=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+    const idx=getChapterIdxAt(pct*(player?.getDuration()||0));
     track.querySelectorAll('.seek-chap-seg').forEach((s,si)=>s.classList.toggle('hov',si===idx));
   };
-  track._chapLeaveBound = ()=>{
+  track._chapLeaveBound=()=>{
     track.querySelectorAll('.seek-chap-seg').forEach(s=>s.classList.remove('hov'));
   };
-  track.addEventListener('mousemove', track._chapHoverBound);
-  track.addEventListener('mouseleave', track._chapLeaveBound);
+  track.addEventListener('mousemove',track._chapHoverBound);
+  track.addEventListener('mouseleave',track._chapLeaveBound);
 }
 
 function buildPipChapterMarkers(){
