@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Player</title>
+<link rel="stylesheet" href="v3.css">
+</head>
+<body>
+
+<div id="app">
+  <div id="videoWrapper">
+    <div id="videoAspect">
+      <img id="thumbnail" alt="">
+      <div id="ytPlayerContainer"></div>
+      <div id="iframeCover" style="display:none;position:absolute;inset:-2px;background:#000;z-index:299;pointer-events:none;"></div>
+      <div id="bigPlay"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+      <div id="ctrl360"><div id="joystick-base"><div id="joystick-knob"></div></div></div>
+      <div class="dt-flash left" id="dtLeft"><div class="dt-label"><svg viewBox="0 0 24 24"><path d="M18 6h-2v12h2zM6 12l8.5 6V6z"/></svg><span>-10s</span></div></div>
+      <div class="dt-flash right" id="dtRight"><div class="dt-label"><svg viewBox="0 0 24 24" style="transform:scaleX(-1)"><path d="M18 6h-2v12h2zM6 12l8.5 6V6z"/></svg><span>+10s</span></div></div>
+      <div id="asBadge"><div id="asDot"></div><span id="asLabel">STOP IN --:--</span></div>
+      <div id="liveBadge"><div id="liveDot"></div><span>LIVE</span></div>
+      <div id="chapBadge"><img id="chapBadgeImg" alt=""><div id="chapBadgeTitle"></div><div id="chapBadgeSub"></div></div>
+      <div id="toast"></div>
+
+      
+      <div id="cwModal" style="display:none;position:absolute;inset:0;z-index:9999;background:#000;align-items:center;justify-content:center;pointer-events:auto;">
+        <div style="background:rgba(15,15,22,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:22px 24px 18px;width:min(300px,88vw);box-shadow:0 24px 64px rgba(0,0,0,0.9);display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;">
+          <div style="color:#fff;font-size:15px;font-weight:700;">Continue watching?</div>
+          <div id="cwTime" style="color:rgba(255,255,255,.55);font-size:12px;"></div>
+          <div style="position:relative;width:54px;height:54px;margin:2px 0 0;">
+            <svg width="54" height="54" style="transform:rotate(-90deg);">
+              <circle cx="27" cy="27" r="22" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/>
+              <circle id="cwCountRing" cx="27" cy="27" r="22" fill="none" stroke="#3b82f6" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="0" style="transition:stroke-dashoffset 1s linear;"/>
+            </svg>
+            <div id="cwCountNum" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;"></div>
+          </div>
+          <div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:-6px;">Starting over if no choice</div>
+          <div style="display:flex;gap:10px;width:100%;margin-top:4px;">
+            <button onclick="cwResume()" style="flex:2;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,.4);">▶ Resume</button>
+            <button onclick="cwStart()"  style="flex:1;padding:10px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:none;color:rgba(255,255,255,.65);font-size:13px;cursor:pointer;">Start over</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="controls">
+    <button class="btn" id="playBtn" title="Play/Pause"><svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    <button class="btn" id="plPrevBtn" title="Previous" onclick="plPrev()" style="display:none"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
+    <button class="btn" id="plNextBtn" title="Next" onclick="plNext()" style="display:none"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z"/></svg></button>
+    <button class="btn" id="plRepeatBtn" title="Repeat: Off" onclick="plCycleRepeat()" style="display:none"><svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v5z"/></svg></button>
+    <div id="volInline">
+      <button class="btn" id="muteBtn" title="Mute/Unmute" onclick="toggleMuteClick(event)"><svg id="muteIcon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3c0-1.77-.77-3.36-2-4.47v8.94c1.23-1.11 2-2.7 2-4.47zM19 12c0 2.21-1.03 4.19-2.65 5.5l1.41 1.41C20.02 16.97 21 14.61 21 12s-.98-4.97-2.24-6.91l-1.41 1.41C18.97 7.81 19 9.79 19 12z"/></svg></button>
+      <input id="volBar" type="range" min="0" max="100" value="100" oninput="onVolBar(this.value);if(window._setVolZoneMuted)window._setVolZoneMuted(true);if(window._toggleUserMuteLock)window._toggleUserMuteLock(true);" onclick="event.stopPropagation()">
+      <span id="volPct">100%</span>
+    </div>
+    <div id="timeDisplay">0:00:00 / 0:00:00</div>
+    <div id="seekWrap">
+      <div id="seekTooltip"><span id="sbTime">0:00</span><span id="sbChap" class="chap-label"></span></div>
+      <div id="seekTrack"><div id="seekFill"></div></div>
+    </div>
+    <div class="dd" id="settingsDd">
+      <button class="btn" title="Settings" onclick="toggleDd('settingsDd')">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a6.96 6.96 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.47.47 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.47.47 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      </button>
+      <div class="dd-menu" id="settingsMenu" style="min-width:220px;max-height:80vh;overflow-y:auto;">
+        <div class="dd-header" style="margin-top:4px">Quality</div>
+        <div id="qualityMenu"><div class="dd-header" style="display:none">Quality</div></div>
+        <div class="dd-header" style="margin-top:4px">Speed</div>
+        <button onclick="setSpeed(0.25)" data-spd="0.25">0.25×</button>
+        <button onclick="setSpeed(0.5)"  data-spd="0.5">0.5×</button>
+        <button onclick="setSpeed(0.75)" data-spd="0.75">0.75×</button>
+        <button onclick="setSpeed(1)"    data-spd="1" class="on" id="speed1x">1× Normal</button>
+        <button onclick="setSpeed(1.25)" data-spd="1.25">1.25×</button>
+        <button onclick="setSpeed(1.5)"  data-spd="1.5">1.5×</button>
+        <button onclick="setSpeed(1.75)" data-spd="1.75">1.75×</button>
+        <button onclick="setSpeed(2)"    data-spd="2">2×</button>
+        
+        <div class="dd-header" style="margin-top:4px">Subtitles</div>
+        <button id="ccOff" class="on" onclick="setCC('off')">Off</button>
+        <button id="ccEn" onclick="setCC('en')">English</button>
+        <button id="ccTh" onclick="setCC('th')">Thai</button>
+        <div class="dd-header" style="margin-top:4px">Loop</div>
+        <button id="loopBtn" onclick="toggleLoop()">Loop: Off</button>
+        <div class="dd-header" style="margin-top:4px">Lores</div>
+        <button onclick="openSkipModal('list')">Manage Lores</button>
+        <div class="dd-header" style="margin-top:4px">Auto-play</div>
+        <button id="autoplayBtn" onclick="toggleAutoplay()">Auto-play: On</button>
+        <div class="dd-header" style="margin-top:4px">Save &amp; Resume</div>
+        <button id="saveSettingsBtn" onclick="toggleSaveSettings()">Save Settings: On</button>
+        <button id="saveProgressBtn" onclick="toggleSaveProgress()">Save Progress: On</button>
+        <button id="saveZonesBtn"    onclick="toggleSaveZones()">Save Lores: On</button>
+        <button onclick="clearSavedProgress();showToast('Progress cleared')" style="font-size:11px;opacity:.7">Clear Saved Progress</button>
+        <button onclick="if(window.clearSavedZones){clearSavedZones();showToast('Lores cleared');}" style="font-size:11px;opacity:.7">Clear Saved Lores</button>
+        <div class="dd-header" style="margin-top:4px">Video Info</div>
+        <button onclick="toggleVideoInfo()">Show Info</button>
+        <div id="videoInfoPanel">
+          <img id="vi-thumb" alt="">
+          <div id="vi-title">—</div>
+          <a id="vi-author" href="#" target="_blank">—</a>
+          <div class="vi-row">
+            <div class="vi-item"><span class="vi-label">Type</span><span class="vi-value" id="vi-type">—</span></div>
+            <div class="vi-item"><span class="vi-label">Thumb Size</span><span class="vi-value" id="vi-thumbsize">—</span></div>
+            <div class="vi-item"><span class="vi-label">Version</span><span class="vi-value" id="vi-version">—</span></div>
+            <div class="vi-item"><span class="vi-label">Width</span><span class="vi-value" id="vi-width">—</span></div>
+          </div>
+          <div id="vi-url-row"><span class="vi-label">URL</span><span class="vi-value"><a id="vi-url" href="#" target="_blank">—</a></span></div>
+          <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);font-size:10px;color:var(--text-muted);text-align:center;line-height:1.5;">
+            Created by <strong style="color:var(--text-dim)">Tsukinatsune</strong><br>
+            Data via <a href="https://noembed.com" target="_blank" style="color:var(--accent);text-decoration:none;">noembed.com</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="btn" id="asBtn" title="Auto-Stop / Sleep Timer" onclick="openAsModal()"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg></button>
+    <button class="btn" id="downloadBtn" title="Download"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
+    <button class="btn text" id="btn360" title="360°" onclick="toggle360()" style="display:none">360</button>
+    <button class="btn" id="fsBtn" title="Fullscreen"><svg id="fsIcon" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button>
+  </div>
+
+  
+  <div id="asModal" onclick="if(event.target===this)closeAsModal()">
+    <div id="asModalBox">
+      <h3>Sleep Timer</h3>
+      <div class="as-tab-row">
+        <button class="as-tab on" id="tabTimer" onclick="switchAsTab('timer')">Timer</button>
+        <button class="as-tab" id="tabClock" onclick="switchAsTab('clock')">Stop at Time</button>
+        <button class="as-tab" id="tabVideo" onclick="switchAsTab('video')">Video Time</button>
+
+      </div>
+      <div id="asTimerPanel" class="show">
+        <div class="as-quick-row">
+          <button class="as-quick" onclick="asQuick(1)">1 min</button>
+          <button class="as-quick" onclick="asQuick(5)">5 min</button>
+          <button class="as-quick" onclick="asQuick(10)">10 min</button>
+          <button class="as-quick" onclick="asQuick(15)">15 min</button>
+          <button class="as-quick" onclick="asQuick(20)">20 min</button>
+          <button class="as-quick" onclick="asQuick(30)">30 min</button>
+          <button class="as-quick" onclick="asQuick(45)">45 min</button>
+          <button class="as-quick" onclick="asQuick(60)">60 min</button>
+          <button class="as-quick" onclick="asQuick(90)">90 min</button>
+          <button class="as-quick" id="asEovBtn" onclick="asQuick(-1)">End of video</button>
+        </div>
+        <div class="as-custom-row">
+          <input class="as-num" id="asHourIn" type="number" min="0" max="23" value="0" placeholder="0">
+          <span class="as-num-label">h</span><span class="as-sep">:</span>
+          <input class="as-num" id="asMinIn"  type="number" min="0" max="59" value="0" placeholder="0">
+          <span class="as-num-label">min</span><span class="as-sep">:</span>
+          <input class="as-num" id="asSecIn"  type="number" min="0" max="59" value="0" placeholder="0">
+          <span class="as-num-label">sec</span>
+        </div>
+      </div>
+      <div id="asClockPanel">
+        <input class="as-custom-row" id="asClockInput" type="time" style="display:block">
+        <span id="asClockHint">Video will pause when your clock reaches this time</span>
+      </div>
+      <div id="asVideoPanel" style="display:none;flex-direction:column;gap:12px;">
+        <div class="as-custom-row">
+          <input class="as-num" id="asVHourIn" type="number" min="0" max="23" value="0" placeholder="0">
+          <span class="as-num-label">h</span><span class="as-sep">:</span>
+          <input class="as-num" id="asVMinIn"  type="number" min="0" max="59" value="0" placeholder="0">
+          <span class="as-num-label">min</span><span class="as-sep">:</span>
+          <input class="as-num" id="asVSecIn"  type="number" min="0" max="59" value="0" placeholder="0">
+          <span class="as-num-label">sec</span>
+        </div>
+        <span style="color:var(--text-muted);font-size:11px;">Video will pause when it reaches this timestamp</span>
+      </div>
+
+      <div class="as-btn-row">
+        <button class="as-btn-cancel" onclick="clearAutoStop();closeAsModal();showToast('Timer cleared')">Clear</button>
+        <button class="as-btn-set" onclick="applyAsModal()">Set Timer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div id="skipMarkBar">
+  <div id="smPanels">
+
+    <div id="smTabBar">
+      <div class="sm-tab-group">
+        <button class="sm-tab smTabOn" id="smTabAdd"  onclick="smSwitchTab('add')">Add Lore</button>
+        <button class="sm-tab"         id="smTabList" onclick="smSwitchTab('list')">Manage <span id="smZoneCount"></span></button>
+      </div>
+    </div>
+
+    
+    <div id="smAddPanel" class="smPanelOn">
+      <div id="smAddInner">
+
+        
+        <div id="smEditBanner">
+          <span id="smEditBannerLabel">Editing zone</span>
+          <button id="smEditCancelBtn" onclick="smCancelEdit()">Cancel</button>
+        </div>
+
+        
+        <div id="smTopConfigRow">
+          <input id="smLabel" placeholder="Lore name…" maxlength="40">
+          <div id="smTypeToggle">
+            <button class="sm-type-btn smTypeZoneOn" id="smTypZone"  onclick="smSetType('zone')">Zone</button>
+            <button class="sm-type-btn"              id="smTypPause" onclick="smSetType('pause')">Pause</button>
+          </div>
+        </div>
+
+        
+        <div id="smZoneRow" style="display: flex;">
+
+          
+          <div id="smZoneModeRow">
+            <button class="sm-zone-mode-btn"              id="smModeSkip"   onclick="smSetZoneMode('skip')">Skip</button>
+            <button class="sm-zone-mode-btn modeEffectOn" id="smModeEffect" onclick="smSetZoneMode('effect')">Effect</button>
+          </div>
+
+          <div id="smSkipNote" style="display:none;">Playback will jump to end of zone</div>
+
+          
+          <div id="smEffectBlock" style="display:flex;">
+
+            <div class="sm-fx-cols">
+              
+              <div class="sm-fx-row sm-fx-row-spd" id="smFxRowSpd">
+                
+                <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;">
+                  <div class="sm-fx-toggle-label" onclick="smToggleFx('spd')" style="display:flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;">
+                    <label class="smz-switch is-on" id="smFxToggleSpd" style="pointer-events:none"><input type="checkbox" style="position:absolute;opacity:0;width:0;height:0"><span class="smz-switch-track"></span></label>
+                    <span class="sm-fx-label">Speed</span>
+                  </div>
+                  <div class="sm-fx-body" id="smFxBodySpd" style="display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;">
+                    
+                    <div class="sm-fx-presets sm-spd-presets" style="flex-wrap:wrap;">
+                      <button class="sm-spd-preset" onclick="cvSetFlat('spd',0.25)">0.25×</button>
+                      <button class="sm-spd-preset" onclick="cvSetFlat('spd',0.5)">0.5×</button>
+                      <button class="sm-spd-preset on" onclick="cvSetFlat('spd',1)">1×</button>
+                      <button class="sm-spd-preset" onclick="cvSetFlat('spd',1.5)">1.5×</button>
+                      <button class="sm-spd-preset" onclick="cvSetFlat('spd',2)">2×</button>
+                      <button class="sm-spd-preset" id="smSpdCurrentBtn" onclick="cvSetSpdCurrent()">Current</button>
+                    </div>
+                    
+                    <div style="display:flex;gap:3px;align-items:center;">
+                      <input id="smSpdInput" class="sm-fx-num sm-fx-num-spd" type="number" min="0.25" max="2" step="0.05" value="1.00" oninput="cvSetFlatVal('spd',this.value)" style="width:60px;">
+                      <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600;">×</span>
+                      <button class="cv-reset-btn" onclick="cvReset('spd')" style="margin-left:2px;">Reset</button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="sm-fx-curve-wrap" id="smFxCurveSpd" style="display:flex;">
+                  <div class="cv-hint">Tap to add  Drag  Dbl-tap to remove (not endpoints)</div>
+                  <svg id="cvSpdSvg" class="cv-svg cv-svg-spd" viewBox="0 0 272 90">
+                    <defs><linearGradient id="cvSpdFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity=".18"/><stop offset="100%" stop-color="#fff" stop-opacity=".01"/></linearGradient></defs>
+                    
+                    <line class="cv-grid" x1="28" y1="4"  x2="268" y2="4"/>
+                    <line class="cv-grid" x1="28" y1="25" x2="268" y2="25"/>
+                    <line class="cv-grid cv-grid-1x" x1="28" y1="46" x2="268" y2="46"/>
+                    <line class="cv-grid" x1="28" y1="67" x2="268" y2="67"/>
+                    <line class="cv-grid" x1="28" y1="84" x2="268" y2="84"/>
+                    <text class="cv-label" x="24" y="7"  text-anchor="end">2×</text>
+                    <text class="cv-label" x="24" y="28" text-anchor="end">1.5×</text>
+                    <text class="cv-label cv-label-1x" x="24" y="49" text-anchor="end">1×</text>
+                    <text class="cv-label" x="24" y="70" text-anchor="end">0.5×</text>
+                    <text class="cv-label" x="24" y="87" text-anchor="end">0.25×</text>
+                    <text class="cv-label" x="42"  y="90" text-anchor="middle">0%</text>
+                    <text class="cv-label" x="148" y="90" text-anchor="middle">50%</text>
+                    <text class="cv-label" x="268" y="90" text-anchor="middle">100%</text>
+                    <polygon id="cvSpdArea" fill="url(#cvSpdFill)" points=""/>
+                    <polyline id="cvSpdLine" class="cv-line cv-line-spd" points=""/>
+                    <g id="cvSpdDots"></g>
+                  </svg>
+                </div>
+              </div>
+
+              
+              <div class="sm-fx-row sm-fx-row-vol" id="smFxRowVol">
+                
+                <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;">
+                  <div class="sm-fx-toggle-label" onclick="smToggleFx('vol')" style="display:flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;">
+                    <label class="smz-switch is-on" id="smFxToggleVol" style="pointer-events:none"><input type="checkbox" style="position:absolute;opacity:0;width:0;height:0"><span class="smz-switch-track"></span></label>
+                    <span class="sm-fx-label">Volume</span>
+                  </div>
+                  <div class="sm-fx-body" id="smFxBodyVol" style="display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;">
+                    
+                    <div class="sm-fx-presets sm-vol-presets" style="flex-wrap:wrap;">
+                      <button class="sm-vol-preset" onclick="cvSetFlat('vol',0)">0%</button>
+                      <button class="sm-vol-preset" onclick="cvSetFlat('vol',25)">25%</button>
+                      <button class="sm-vol-preset" onclick="cvSetFlat('vol',50)">50%</button>
+                      <button class="sm-vol-preset" onclick="cvSetFlat('vol',75)">75%</button>
+                      <button class="sm-vol-preset on" onclick="cvSetFlat('vol',100)">100%</button>
+                      <button class="sm-vol-preset" id="smVolCurrentBtn" onclick="cvSetVolCurrent()">Current</button>
+                    </div>
+                    
+                    <div style="display:flex;gap:3px;align-items:center;">
+                      <input id="smVolInput" class="sm-fx-num sm-fx-num-vol" type="number" min="0" max="100" step="0.1" value="100" oninput="cvSetFlatVal('vol',this.value)" style="width:60px;">
+                      <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600;">%</span>
+                      <button class="cv-reset-btn" onclick="cvReset('vol')" style="margin-left:2px;">Reset</button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="sm-fx-curve-wrap" id="smFxCurveVol" style="display:flex;">
+                  <div class="cv-hint">Tap to add  Drag  Dbl-tap to remove (not endpoints)</div>
+                  <svg id="cvVolSvg" class="cv-svg cv-svg-vol" viewBox="0 0 272 90">
+                    <defs><linearGradient id="cvVolFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity=".18"/><stop offset="100%" stop-color="#fff" stop-opacity=".01"/></linearGradient></defs>
+                    
+                    <line class="cv-grid" x1="28" y1="4"  x2="268" y2="4"/>
+                    <line class="cv-grid" x1="28" y1="25" x2="268" y2="25"/>
+                    <line class="cv-grid" x1="28" y1="46" x2="268" y2="46"/>
+                    <line class="cv-grid" x1="28" y1="67" x2="268" y2="67"/>
+                    <line class="cv-grid" x1="28" y1="84" x2="268" y2="84"/>
+                    <text class="cv-label" x="24" y="7"  text-anchor="end">100%</text>
+                    <text class="cv-label" x="24" y="28" text-anchor="end">75%</text>
+                    <text class="cv-label" x="24" y="49" text-anchor="end">50%</text>
+                    <text class="cv-label" x="24" y="70" text-anchor="end">25%</text>
+                    <text class="cv-label" x="24" y="87" text-anchor="end">0%</text>
+                    <text class="cv-label" x="42"  y="90" text-anchor="middle">0%</text>
+                    <text class="cv-label" x="148" y="90" text-anchor="middle">50%</text>
+                    <text class="cv-label" x="268" y="90" text-anchor="middle">100%</text>
+                    <polygon id="cvVolArea" fill="url(#cvVolFill)" points=""/>
+                    <polyline id="cvVolLine" class="cv-line cv-line-vol" points=""/>
+                    <g id="cvVolDots"></g>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            
+            <div class="sm-fx-row sm-fx-row-loop" id="smFxRowLoop" style="flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="sm-fx-label" style="flex-shrink:0;">Loop</span>
+                <input id="smLoopCountIn" type="text" value="0">
+                <span style="font-size:10px;color:rgba(255,255,255,.5);font-weight:600;white-space:nowrap;">x  (0 = off  inf = forever)</span>
+              </div>
+              <div class="sm-fx-presets">
+                <button class="sm-loop-preset on" onclick="smLoopSet(0)">0</button>
+                <button class="sm-loop-preset" onclick="smLoopSet(2)">2×</button>
+                <button class="sm-loop-preset" onclick="smLoopSet(3)">3×</button>
+                <button class="sm-loop-preset" onclick="smLoopSet(5)">5×</button>
+                <button class="sm-loop-preset" onclick="smLoopSet(10)">10×</button>
+                <button class="sm-loop-preset" onclick="smLoopSet(-1)">inf</button>
+              </div>
+            </div>
+
+            
+            <div class="sm-fx-row" id="smFxRowTeleport" style="flex-direction:column;gap:6px;border-top:1px solid rgba(255,255,255,0.07);padding-top:8px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="sm-fx-toggle-label" onclick="smToggleTeleport()" style="display:flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;">
+                  <label class="smz-switch" id="smTeleportToggle" style="pointer-events:none"><input type="checkbox" style="position:absolute;opacity:0;width:0;height:0"><span class="smz-switch-track"></span></label>
+                  <span class="sm-fx-label">Teleport at End</span>
+                </div>
+                <span style="font-size:10px;color:rgba(255,255,255,.35);">jump to another zone when this zone ends</span>
+              </div>
+              <div id="smTeleportBody" style="display:none;flex-direction:column;gap:6px;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <button type="button" onclick="smTeleportMarkNow()" style="padding:5px 12px;font-size:10px;font-weight:600;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.35);border-radius:6px;color:var(--accent);cursor:pointer;font-family:inherit;white-space:nowrap;">Mark Now</button>
+                  <span id="smTeleportPreview" style="font-size:10px;color:rgba(255,255,255,.45);display:none;">→ <span id="smTeleportPreviewTime"></span></span>
+                </div>
+                <div style="font-size:10px;color:rgba(255,255,255,.3);">Playback jumps to this timestamp when this zone's end is reached</div>
+                
+                <input id="smTeleportH" type="hidden" value="0">
+                <input id="smTeleportM" type="hidden" value="0">
+                <input id="smTeleportS" type="hidden" value="0">
+                <div id="smTeleportDd" style="display:none;"><div id="smTeleportItems"></div></div>
+                <input type="hidden" id="smTeleportSelect" value="">
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        
+        <div id="smPauseRow">
+          <div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;">
+            <button class="sm-pause-mode-btn smPauseModeOn" id="smPauseModeNormal"     onclick="smSetPauseMode('normal')">Normal Pause</button>
+            <button class="sm-pause-mode-btn"               id="smPauseModeTimer"      onclick="smSetPauseMode('timer')">Pause for…</button>
+            <button class="sm-pause-mode-btn"               id="smPauseModeUntil"      onclick="smSetPauseMode('pauseuntil')">Pause Until (GMT)</button>
+          </div>
+          <div id="smPauseTimerRow" style="display:none;align-items:center;gap:6px;">
+            <input id="smPauseSec" type="number" min="1" max="3600" value="10" style="width:60px;padding:4px 8px;background:rgba(255,255,255,.07);border:1.5px solid rgba(239,68,68,.3);border-radius:6px;color:#fff;font-size:13px;font-weight:700;text-align:center;outline:none;font-family:inherit;">
+            <span style="font-size:11px;color:#f87171;font-weight:600;">seconds, then resume</span>
+          </div>
+          
+          <div id="smPauseUntilRow" style="display:none;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <input id="smPauseUntilH" type="number" min="0" max="23" value="0" placeholder="HH"
+                style="width:52px;padding:4px 8px;background:rgba(255,255,255,.07);border:1.5px solid rgba(239,68,68,.3);border-radius:6px;color:#fff;font-size:13px;font-weight:700;text-align:center;outline:none;font-family:inherit;">
+              <span style="color:rgba(255,255,255,.4);font-size:15px;font-weight:300;">:</span>
+              <input id="smPauseUntilM" type="number" min="0" max="59" value="0" placeholder="MM"
+                style="width:52px;padding:4px 8px;background:rgba(255,255,255,.07);border:1.5px solid rgba(239,68,68,.3);border-radius:6px;color:#fff;font-size:13px;font-weight:700;text-align:center;outline:none;font-family:inherit;">
+              <span style="color:rgba(255,255,255,.4);font-size:15px;font-weight:300;">:</span>
+              <input id="smPauseUntilS" type="number" min="0" max="59" value="0" placeholder="SS"
+                style="width:52px;padding:4px 8px;background:rgba(255,255,255,.07);border:1.5px solid rgba(239,68,68,.3);border-radius:6px;color:#fff;font-size:13px;font-weight:700;text-align:center;outline:none;font-family:inherit;">
+              <span style="font-size:10px;color:#f87171;font-weight:600;">GMT</span>
+            </div>
+            <div id="smPauseUntilClock" style="font-size:10px;color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;">Current GMT: --:--:--</div>
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,.35);" id="smPauseModeHint">Video pauses when playback enters this zone</div>
+        </div>
+
+        
+        <div id="smMarkRow" style="display: flex;">
+          <div class="sm-mark-card" id="smStartCard">
+            <span class="sm-card-label">START</span>
+            <span class="sm-card-time" id="smStartTime">--:--</span>
+            <button class="sm-card-btn" onclick="smMark('start')">Mark Now</button>
+          </div>
+          <div class="sm-mark-card" id="smEndCard">
+            <span class="sm-card-label">END</span>
+            <span class="sm-card-time" id="smEndTime">--:--</span>
+            <button class="sm-card-btn" onclick="smMark('end')">Mark Now</button>
+          </div>
+        </div>
+        <div id="smPausePosRow" style="display: none;">
+          <div class="sm-mark-card" id="smPausePosCard" style="width:100%;">
+            <span class="sm-card-label">PAUSE POSITION</span>
+            <span class="sm-card-time" id="smPausePosTime">--:--</span>
+            <button class="sm-card-btn" onclick="smMarkPause()">Mark Now</button>
+          </div>
+        </div>
+
+        <div id="smOverlapWarn">Overlaps an existing zone — will be trimmed automatically</div>
+
+      </div>
+
+      <div id="smBottomRow">
+        <button id="smClose" onclick="smCancel()"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;flex-shrink:0"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>Close</button>
+        <button id="smDone" onclick="smDone()" disabled>Add</button>
+      </div>
+    </div>
+
+    
+    <div id="smListPanel">
+      <div id="smListControls">
+        <button id="skipGlobalToggle" onclick="skipToggleGlobal()">All Lores — Off</button>
+      </div>
+      <div id="smListInner">
+        <div id="smListEmpty">No lores yet — add one from the Add Lore tab</div>
+      </div>
+      <div id="smListBottom">
+        <button id="smCloseList" onclick="smCancel()"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;flex-shrink:0"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<script src="v3-loader.js"></script>
+</body>
+</html>
