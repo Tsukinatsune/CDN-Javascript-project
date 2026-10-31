@@ -186,8 +186,8 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:"Segoe UI",sys
 #mpBigPlay::before { content:''; position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 35% 35%,rgba(255,255,255,0.08) 0%,transparent 60%); pointer-events:none; }
 #mpBigPlay:hover { background:rgba(59,130,246,0.25) !important; border-color:rgba(59,130,246,0.6) !important; transform:scale(1.1) !important; box-shadow:0 12px 40px rgba(0,0,0,0.5),0 0 20px rgba(59,130,246,0.3) !important; }
 #mpBigPlay svg { width:clamp(18px,3.5vw,24px) !important; height:clamp(18px,3.5vw,24px) !important; margin-left:2px; }
-</style>
-<style>
+
+
 
 #seekFill.bar-hidden { display:none; }
 #seekTrack.bar-active { background:transparent !important; }
