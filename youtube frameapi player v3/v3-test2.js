@@ -1254,7 +1254,7 @@ window.resizeVideo=function(){
     document.addEventListener('touchend', endSeek);
   })();
 
-  /* ── seekTooltip: show on hover for non-live + show lore name ── */
+  /* ── seekTooltip: show on hover for non-live + show chapter name ── */
   (function(){
     var track=document.getElementById('seekTrack');
     var tip=document.getElementById('seekTooltip');
@@ -1273,40 +1273,19 @@ window.resizeVideo=function(){
       return 0;
     }
 
-    function getLoreAtPct(pct){
-      /* check zone segments painted on the bar */
-      var segs=track.querySelectorAll('.bar-seg[data-zone-id]');
-      for(var i=0;i<segs.length;i++){
-        var seg=segs[i];
-        var s=parseFloat(seg.dataset.zoneS||'-1'), e=parseFloat(seg.dataset.zoneE||'-1');
-        if(s>=0&&pct>=s&&pct<e) return seg.dataset.zoneLabel||null;
-      }
-      /* fallback: scan _skipZones directly */
-      var dur=getDur(); if(!dur) return null;
-      var zones=window._skipZones||[];
-      for(var j=0;j<zones.length;j++){
-        var z=zones[j];
-        if(!z.enabled||z.type==='pause') continue;
-        var zs=z.start/dur*100, ze=z.end/dur*100;
-        if(pct>=zs&&pct<ze) return z.label||null;
-      }
-      return null;
-    }
-
     track.addEventListener('mousemove', function(e){
       if(window._isLiveStream) return; /* live has its own handler */
       var dur=getDur(); if(!dur) return;
       var r=track.getBoundingClientRect();
       var frac=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
-      var pct=frac*100;
       var t=frac*dur;
       sb.textContent=fmt(t);
 
-      /* show lore name if cursor is over a lore zone */
+      /* show chapter name if chapters are loaded */
       if(sbChap){
-        var loreName=getLoreAtPct(pct);
-        if(loreName){
-          sbChap.textContent=loreName;
+        var chapName=typeof getChapterLabelAt==='function'?getChapterLabelAt(t):'';
+        if(chapName){
+          sbChap.textContent=chapName;
           sbChap.className='chap-label-visible';
         } else {
           sbChap.textContent='';
