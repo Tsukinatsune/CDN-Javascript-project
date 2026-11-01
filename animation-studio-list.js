@@ -23323,7 +23323,7 @@ const Animation_studio_list = [
   },
   {
     "id": 3059,
-    "name": "West Japan Marketing Communications",
+    "name": "JR Nishi Nihon Communications / West Japan Marketing Communications",
     "logo": "2cb97272-7271-4273-91e9-0c2d17100b5b",
     "japanese": "JR西日本コミュニケーションズ",
     "established": "06/01/2014",
